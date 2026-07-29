@@ -1,12 +1,7 @@
-import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-
-  // This app lives in a subdirectory of a repo that has its own lockfile at the
-  // root; pin the workspace root so Turbopack does not infer the parent.
-  turbopack: { root: fileURLToPath(new URL('.', import.meta.url)) },
 
   experimental: {
     // One page, ~20KB of CSS. Inlining it removes the only render-blocking
