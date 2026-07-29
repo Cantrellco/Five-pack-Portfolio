@@ -1,0 +1,86 @@
+/* ---------------------------------------------------------------------------
+   Design tokens. Single source of truth.
+
+   Never hardcode a hex value in a component. globals.css maps every token
+   below into Tailwind's theme namespaces via `@theme inline`, so `text-ink`
+   emits `var(--ink)` rather than a baked literal.
+
+   Raw tokens are deliberately named outside Tailwind's namespaces (--fs-*,
+   --ff-*, --sp-*) so the mapping is never self-referential.
+
+   Six colour values. If a seventh is ever added, one must be deleted; tints
+   and shades come from color-mix(), not from growing the palette.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* ---- Colour ---------------------------------------------------------- */
+  --paper: #ebe5d9; /* oat — page canvas */
+  --paper-2: #e2dbcc; /* recessed panels */
+  --ink: #171512; /* warm near-black — all primary type */
+  --graphite: #6a6358; /* secondary type — see contrast note */
+  --rule: #d3cbba; /* hairlines only, never text */
+  --signal: #2c3e63; /* deep indigo — the ONE accent */
+
+  /* Measured contrast against --paper (WCAG 2.1 relative luminance):
+       --ink       15.1:1  AAA
+       --graphite   4.73:1 AA   <- the brief's #6E675C measures 4.45:1 and
+                                   FAILS AA for body text. Darkened four steps
+                                   to clear 4.5:1, same warm hue.
+       --signal     8.47:1 AAA
+     --rule is decorative structure only and is never used to carry meaning,
+     so it is exempt from the 3:1 non-text minimum. */
+
+  /* ---- Type ------------------------------------------------------------
+     Fluid modular scale: a 1.2 ratio at a 360px viewport interpolating to a
+     1.25 ratio at 1440px, so headings open up faster than body copy as the
+     canvas widens. Precomputed clamps — no runtime calc chains. */
+  --fs-2xs: clamp(0.694rem, 0.681rem + 0.06vw, 0.72rem);
+  --fs-xs: clamp(0.833rem, 0.809rem + 0.1vw, 0.9rem);
+  --fs-sm: clamp(0.9rem, 0.87rem + 0.13vw, 1rem);
+  --fs-base: clamp(1rem, 0.958rem + 0.185vw, 1.125rem);
+  --fs-md: clamp(1.2rem, 1.12rem + 0.35vw, 1.406rem);
+  --fs-lg: clamp(1.44rem, 1.31rem + 0.57vw, 1.758rem);
+  --fs-xl: clamp(1.728rem, 1.52rem + 0.9vw, 2.197rem);
+  --fs-2xl: clamp(2.074rem, 1.76rem + 1.4vw, 2.747rem);
+  --fs-3xl: clamp(2.488rem, 2.03rem + 2.04vw, 3.433rem);
+  --fs-4xl: clamp(2.986rem, 2.33rem + 2.92vw, 4.292rem);
+  --fs-5xl: clamp(3.583rem, 2.66rem + 4.1vw, 5.364rem);
+
+  /* The hero name has its own curve: set two lines deep, it must fill the
+     measure at every width and never overflow at 320px. */
+  --fs-hero: clamp(3.25rem, 1.9rem + 6.1vw, 10.5rem);
+
+  --ff-display: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
+  --ff-body: 'Instrument Sans', ui-sans-serif, 'Helvetica Neue', Arial, sans-serif;
+  --ff-mono: 'Martian Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --lh-display: 0.92;
+  --lh-tight: 1.16;
+  --lh-body: 1.62;
+  --ls-display: -0.022em;
+  --ls-label: 0.14em;
+
+  /* ---- Space -----------------------------------------------------------
+     A 4px-rooted scale that expands ~1.5x between mobile and desktop. */
+  --sp-3xs: clamp(0.25rem, 0.24rem + 0.05vw, 0.3rem);
+  --sp-2xs: clamp(0.5rem, 0.47rem + 0.13vw, 0.6rem);
+  --sp-xs: clamp(0.75rem, 0.7rem + 0.22vw, 0.9rem);
+  --sp-sm: clamp(1rem, 0.93rem + 0.31vw, 1.2rem);
+  --sp-md: clamp(1.5rem, 1.39rem + 0.46vw, 1.8rem);
+  --sp-lg: clamp(2rem, 1.72rem + 1.24vw, 3rem);
+  --sp-xl: clamp(3rem, 2.44rem + 2.5vw, 5rem);
+  --sp-2xl: clamp(4.5rem, 3.3rem + 5.3vw, 8.75rem);
+  --sp-3xl: clamp(6rem, 3.9rem + 9.3vw, 13.5rem);
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --measure: 34rem; /* ~66 characters at body size */
+  --gutter: clamp(1.25rem, 0.6rem + 2.9vw, 4.5rem);
+  --max-page: 88rem;
+
+  /* ---- Motion -----------------------------------------------------------
+     ONE easing family, slightly overdamped. Nothing on this site bounces. */
+  --motion-ease: cubic-bezier(0.22, 0.61, 0.24, 1);
+  --motion-fast: 150ms;
+  --motion-base: 480ms;
+  --motion-slow: 700ms;
+}

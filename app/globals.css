@@ -1,0 +1,427 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './fonts.css';
+
+/* Map the token layer into Tailwind's theme namespaces. `inline` means the
+   generated utilities emit `var(--ink)` rather than a baked hex, so the tokens
+   stay the single source of truth at runtime. */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-rule: var(--rule);
+  --color-signal: var(--signal);
+
+  --font-display: var(--ff-display);
+  --font-body: var(--ff-body);
+  --font-mono: var(--ff-mono);
+
+  --text-2xs: var(--fs-2xs);
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-base: var(--fs-base);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+  --text-3xl: var(--fs-3xl);
+  --text-4xl: var(--fs-4xl);
+  --text-5xl: var(--fs-5xl);
+
+  --ease-site: var(--motion-ease);
+}
+
+/* ---------------------------------------------------------------------- base
+-------------------------------------------------------------------------- */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Lenis owns scrolling once it boots and sets `.lenis` on <html>. Before that
+   — and permanently with JS disabled — native smooth scroll handles anchors. */
+html:not(.lenis) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.lenis) {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--ff-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--signal) 22%, transparent);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* Anchor targets clear the sticky masthead. */
+[id] {
+  scroll-margin-top: calc(var(--sp-xl) + 2.5rem);
+}
+
+/* --------------------------------------------------------------- typography
+-------------------------------------------------------------------------- */
+
+.display-hero {
+  font-family: var(--ff-display);
+  font-size: var(--fs-hero);
+  font-weight: 400;
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+}
+
+.display-1 {
+  font-family: var(--ff-display);
+  font-size: var(--fs-4xl);
+  font-weight: 400;
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+}
+
+.display-2 {
+  font-family: var(--ff-display);
+  font-size: var(--fs-2xl);
+  font-weight: 400;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.016em;
+}
+
+.display-3 {
+  font-family: var(--ff-display);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  max-width: 30ch;
+  text-wrap: pretty;
+}
+
+.body-copy {
+  max-width: var(--measure);
+  text-wrap: pretty;
+}
+
+.body-copy > * + * {
+  margin-top: 1em;
+}
+
+/* Mono is the utility voice: labels, data, technical annotation. Martian Mono
+   runs wide, so it is always set small with open tracking. */
+.label {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--graphite);
+}
+
+.mono {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------- layout
+-------------------------------------------------------------------------- */
+
+.shell {
+  width: 100%;
+  max-width: var(--max-page);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.section {
+  padding-block: var(--sp-2xl);
+  position: relative;
+}
+
+/* The editorial grid. Twelve columns from `md` up; a single column below it.
+   Labels sit in the first two columns, prose is side-set from column three —
+   left-aligned and asymmetric, never centred. */
+.grid-editorial {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-md);
+}
+
+/* Grid items default to `min-width: auto`, so one unbreakable string — an
+   email address set at display size, say — makes its column refuse to shrink
+   and pushes the whole page wider than the viewport. This is the fix for that
+   entire class of bug, not a patch for one element. */
+.grid-editorial > * {
+  min-width: 0;
+}
+
+@media (min-width: 48rem) {
+  .grid-editorial {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--sp-md);
+  }
+  .col-aside {
+    grid-column: 1 / span 3;
+  }
+  .col-main {
+    grid-column: 4 / span 8;
+  }
+  .col-wide {
+    grid-column: 4 / span 9;
+  }
+  .col-full {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Hairlines are structural. They mark where one idea stops and the next
+   starts — never used as ornament. */
+.rule-top {
+  border-top: 1px solid var(--rule);
+}
+
+.rule-bottom {
+  border-bottom: 1px solid var(--rule);
+}
+
+/* -------------------------------------------------------------------- links
+-------------------------------------------------------------------------- */
+
+/* Inline links inside prose. --signal against --ink measures 1.7:1, which is
+   below the 3:1 WCAG 1.4.1 needs for colour-only differentiation, so the
+   underline is permanent. Hover draws a full-strength line across it. */
+.link {
+  color: var(--signal);
+  text-decoration: none;
+  position: relative;
+  display: inline;
+}
+
+.link::after,
+.link::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.14em;
+  height: 1px;
+  background-color: currentColor;
+  pointer-events: none;
+}
+
+.link::after {
+  opacity: 0.42;
+}
+
+.link::before {
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.link:hover::before,
+.link:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Standalone links — nav items, CTAs, list rows. Not inside a block of text,
+   so position and weight already distinguish them; the rule draws on hover. */
+.link-block {
+  color: var(--ink);
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+
+.link-block::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.22em;
+  height: 1px;
+  background-color: var(--signal);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.link-block:hover::after,
+.link-block:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.link-block:hover {
+  color: var(--signal);
+}
+
+/* The one filled control on the site: the App Store call to action. */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.72em 1.15em;
+  background-color: var(--ink);
+  color: var(--paper);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  border: 1px solid var(--ink);
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
+}
+
+.cta:hover {
+  background-color: var(--signal);
+  border-color: var(--signal);
+}
+
+.cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.72em 1.15em;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--ink);
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease);
+}
+
+.cta-ghost:hover {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+/* ------------------------------------------------------------------- field
+   One fixed layer behind the whole document, holding the static frame and —
+   when the device can run it — the canvas on top of it. Never scrolls, never
+   remounts, never receives a pointer event.
+-------------------------------------------------------------------------- */
+
+.field-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.field-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  transition: opacity 900ms var(--motion-ease);
+}
+
+.field-poster[data-hidden='true'] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-poster {
+    transition: none;
+  }
+}
+
+/* Content sits above the field. */
+.page {
+  position: relative;
+  z-index: 1;
+}
+
+/* The figure's static curve. Present for everyone; faded out once the canvas
+   is live and drawing the same plot into the same box. */
+.plot-fallback {
+  opacity: 1;
+  transition: opacity 600ms var(--motion-ease);
+}
+
+.field-live .plot-fallback {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plot-fallback {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------- skip link
+-------------------------------------------------------------------------- */
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: 0;
+  z-index: 100;
+  transform: translateY(-120%);
+  background-color: var(--ink);
+  color: var(--paper);
+  padding: 0.6rem 1rem;
+  font-size: var(--fs-sm);
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0.5rem);
+}
+
+/* -------------------------------------------------------------- reveal base
+   Elements opt in with `data-reveal`. The CSS hides them ONLY when scripting
+   can drive them back — `.js` is set on <html> by an inline script before
+   paint, so the no-JS path never gets stuck invisible.
+-------------------------------------------------------------------------- */
+
+.js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

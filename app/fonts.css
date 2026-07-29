@@ -1,0 +1,41 @@
+/* ---------------------------------------------------------------------------
+   Self-hosted variable fonts, subset to the glyphs this site uses.
+   Regenerate with `npm run fonts` (see scripts/subset-fonts.py).
+
+   Newsreader keeps its `opsz` axis, so `font-optical-sizing: auto` (the CSS
+   default) hands the 168px hero a design actually drawn for display sizes —
+   finer hairlines, tighter fit — rather than a scaled-up text cut. That axis
+   is the reason it is the display face.
+--------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Newsreader';
+  src: url('/fonts/newsreader-display.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/instrument-sans.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/instrument-sans-italic.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Martian Mono';
+  src: url('/fonts/martian-mono.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
