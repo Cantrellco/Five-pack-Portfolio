@@ -1,0 +1,288 @@
+import { fieldState } from '@/lib/field-state';
+import { fieldFrag, fieldVert, trendFrag, trendVert } from './shaders';
+import type { FieldData } from './load';
+
+/**
+ * The field's renderer, written directly against WebGL.
+ *
+ * This started on three.js and react-three-fiber. It drew correctly, but the
+ * bundle was 230KB over the wire and cost ~1.4s of script evaluation on a
+ * throttled mobile profile — which put Lighthouse's performance score at 0.69
+ * and pushed LCP to three seconds, because the main thread was busy compiling
+ * a scene graph the page does not have. A site whose own copy points at a
+ * 106KB buffer and one draw call cannot ship a 3D engine to draw eighteen
+ * thousand dots.
+ *
+ * What is actually needed is here: two programs, two buffers, ten uniforms and
+ * a loop. The GLSL is unchanged — it was always hand-written.
+ */
+
+type GL = WebGL2RenderingContext | WebGLRenderingContext;
+
+const MAX_DPR = 1.75;
+
+/** Frame-rate independent approach. `rate` is roughly "fraction closed per
+ *  second", so the feel is identical at 60fps and 120fps. */
+const approach = (current: number, target: number, rate: number, dt: number) =>
+  current + (target - current) * (1 - Math.exp(-rate * dt));
+
+function compile(gl: GL, type: number, source: string, label: string) {
+  const shader = gl.createShader(type);
+  if (!shader) throw new Error(`could not create ${label} shader`);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(shader);
+    gl.deleteShader(shader);
+    throw new Error(`${label} shader failed to compile: ${log}`);
+  }
+  return shader;
+}
+
+function link(gl: GL, vertSrc: string, fragSrc: string, label: string) {
+  const vert = compile(gl, gl.VERTEX_SHADER, vertSrc, `${label} vertex`);
+  const frag = compile(gl, gl.FRAGMENT_SHADER, fragSrc, `${label} fragment`);
+  const program = gl.createProgram();
+  if (!program) throw new Error(`could not create ${label} program`);
+  gl.attachShader(program, vert);
+  gl.attachShader(program, frag);
+  gl.linkProgram(program);
+  // The shaders are owned by the program once linked; drop our references.
+  gl.deleteShader(vert);
+  gl.deleteShader(frag);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const log = gl.getProgramInfoLog(program);
+    gl.deleteProgram(program);
+    throw new Error(`${label} program failed to link: ${log}`);
+  }
+  return program;
+}
+
+/** Reads a token off the document so the palette stays the single source of
+ *  truth, and converts it to the 0..1 floats GL wants. */
+function readInk(): [number, number, number] {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+  const hex = /^#([0-9a-f]{6})$/i.exec(raw);
+  if (!hex) return [0.09, 0.082, 0.071];
+  const n = parseInt(hex[1]!, 16);
+  // sRGB to linear — the same conversion three was doing before writing the
+  // uniform, so the mark colour is unchanged.
+  const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return [toLinear(((n >> 16) & 255) / 255), toLinear(((n >> 8) & 255) / 255), toLinear((n & 255) / 255)];
+}
+
+export type FieldRenderer = { destroy: () => void };
+
+export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData): FieldRenderer {
+  const gl = (canvas.getContext('webgl2', {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    stencil: false,
+    premultipliedAlpha: false,
+    powerPreference: 'low-power',
+  }) ?? canvas.getContext('webgl', { alpha: true, antialias: false, depth: false, stencil: false, premultipliedAlpha: false })) as GL | null;
+
+  if (!gl) throw new Error('no WebGL context');
+
+  const pointsProgram = link(gl, fieldVert, fieldFrag, 'field');
+  const trendProgram = link(gl, trendVert, trendFrag, 'trend');
+
+  const pointsPos = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointsPos);
+  gl.bufferData(gl.ARRAY_BUFFER, data.positions, gl.STATIC_DRAW);
+
+  const pointsMeta = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointsMeta);
+  gl.bufferData(gl.ARRAY_BUFFER, data.meta, gl.STATIC_DRAW);
+
+  const trendPos = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, trendPos);
+  gl.bufferData(gl.ARRAY_BUFFER, data.trend, gl.STATIC_DRAW);
+
+  const fieldLoc = {
+    position: gl.getAttribLocation(pointsProgram, 'position'),
+    aMeta: gl.getAttribLocation(pointsProgram, 'aMeta'),
+    uTime: gl.getUniformLocation(pointsProgram, 'uTime'),
+    uProgress: gl.getUniformLocation(pointsProgram, 'uProgress'),
+    uResolve: gl.getUniformLocation(pointsProgram, 'uResolve'),
+    uAspect: gl.getUniformLocation(pointsProgram, 'uAspect'),
+    uPixelRatio: gl.getUniformLocation(pointsProgram, 'uPixelRatio'),
+    uDensity: gl.getUniformLocation(pointsProgram, 'uDensity'),
+    uPointer: gl.getUniformLocation(pointsProgram, 'uPointer'),
+    uR2: gl.getUniformLocation(pointsProgram, 'uR2'),
+    uPlot: gl.getUniformLocation(pointsProgram, 'uPlot'),
+    uInk: gl.getUniformLocation(pointsProgram, 'uInk'),
+  };
+
+  const trendLoc = {
+    position: gl.getAttribLocation(trendProgram, 'position'),
+    uPlot: gl.getUniformLocation(trendProgram, 'uPlot'),
+    uResolve: gl.getUniformLocation(trendProgram, 'uResolve'),
+    uInk: gl.getUniformLocation(trendProgram, 'uInk'),
+  };
+
+  const ink = readInk();
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  // Straight (non-premultiplied) source over a transparent canvas.
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.clearColor(0, 0, 0, 0);
+
+  // ---- state driven by the page ------------------------------------------
+  let time = 0;
+  let progress = 0;
+  let resolve = 0;
+  let pointerX = 0.5;
+  let pointerY = 0.5;
+  let density = 1;
+  let width = 0;
+  let height = 0;
+
+  // ---- adaptive quality ---------------------------------------------------
+  // Stands in for drei's PerformanceMonitor: sample frame times over a second
+  // and thin the field rather than drop frames.
+  let sampleStart = 0;
+  let sampleFrames = 0;
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const w = Math.round(canvas.clientWidth * dpr);
+    const h = Math.round(canvas.clientHeight * dpr);
+    if (w === canvas.width && h === canvas.height) return;
+    canvas.width = w;
+    canvas.height = h;
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
+    gl!.viewport(0, 0, w, h);
+  }
+
+  resize();
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(canvas);
+
+  let raf = 0;
+  let last = 0;
+
+  function frame(now: number) {
+    raf = requestAnimationFrame(frame);
+
+    // Clamp: a tab that wakes after a minute must not jump the drift forward
+    // by however long it was away.
+    const dt = last === 0 ? 1 / 60 : Math.min((now - last) / 1000, 1 / 20);
+    last = now;
+
+    time += dt;
+    progress = approach(progress, fieldState.progress, 9, dt);
+    resolve = approach(resolve, fieldState.resolve, 4.5, dt);
+    fieldState.liveResolve = resolve;
+
+    // Slow enough to read as weight rather than as a cursor effect.
+    pointerX = approach(pointerX, (fieldState.pointerX + 1) / 2, 1.7, dt);
+    pointerY = approach(pointerY, (fieldState.pointerY + 1) / 2, 1.7, dt);
+
+    // Document space to viewport space. One scrollY read; the figure's box is
+    // measured on resize, never in here.
+    const plot = fieldState.plot;
+    let px = 0.1;
+    let py = 0.2;
+    let pw = 0.8;
+    let ph = 0.4;
+    if (plot.measured && width > 0 && height > 0) {
+      const top = plot.top - window.scrollY;
+      px = plot.left / width;
+      py = 1 - (top + plot.height) / height;
+      pw = plot.width / width;
+      ph = plot.height / height;
+    }
+
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const aspect = width / Math.max(1, height);
+
+    gl!.clear(gl!.COLOR_BUFFER_BIT);
+
+    // --- the progression curve, under the points ---------------------------
+    if (resolve > 0.01 && data.trend.length > 0) {
+      gl!.useProgram(trendProgram);
+      gl!.uniform4f(trendLoc.uPlot, px, py, pw, ph);
+      gl!.uniform1f(trendLoc.uResolve, resolve);
+      gl!.uniform3f(trendLoc.uInk, ink[0], ink[1], ink[2]);
+      gl!.bindBuffer(gl!.ARRAY_BUFFER, trendPos);
+      gl!.enableVertexAttribArray(trendLoc.position);
+      gl!.vertexAttribPointer(trendLoc.position, 3, gl!.FLOAT, false, 0, 0);
+      gl!.drawArrays(gl!.LINES, 0, data.trend.length / 3);
+    }
+
+    // --- the field ---------------------------------------------------------
+    gl!.useProgram(pointsProgram);
+    gl!.uniform1f(fieldLoc.uTime, time);
+    gl!.uniform1f(fieldLoc.uProgress, progress);
+    gl!.uniform1f(fieldLoc.uResolve, resolve);
+    gl!.uniform1f(fieldLoc.uAspect, aspect);
+    gl!.uniform1f(fieldLoc.uPixelRatio, dpr);
+    gl!.uniform1f(fieldLoc.uDensity, density);
+    gl!.uniform2f(fieldLoc.uPointer, pointerX, pointerY);
+    gl!.uniform2f(fieldLoc.uR2, data.r2[0], data.r2[1]);
+    gl!.uniform4f(fieldLoc.uPlot, px, py, pw, ph);
+    gl!.uniform3f(fieldLoc.uInk, ink[0], ink[1], ink[2]);
+
+    gl!.bindBuffer(gl!.ARRAY_BUFFER, pointsPos);
+    gl!.enableVertexAttribArray(fieldLoc.position);
+    gl!.vertexAttribPointer(fieldLoc.position, 3, gl!.FLOAT, false, 0, 0);
+    gl!.bindBuffer(gl!.ARRAY_BUFFER, pointsMeta);
+    gl!.enableVertexAttribArray(fieldLoc.aMeta);
+    gl!.vertexAttribPointer(fieldLoc.aMeta, 3, gl!.FLOAT, false, 0, 0);
+    gl!.drawArrays(gl!.POINTS, 0, data.count);
+
+    // --- adaptive quality --------------------------------------------------
+    sampleFrames += 1;
+    if (sampleStart === 0) sampleStart = now;
+    else if (now - sampleStart >= 1000) {
+      const fps = (sampleFrames * 1000) / (now - sampleStart);
+      if (fps < 45 && density > 0.35) density = Math.max(0.35, density - 0.25);
+      else if (fps > 55 && density < 1) density = Math.min(1, density + 0.15);
+      sampleStart = now;
+      sampleFrames = 0;
+    }
+  }
+
+  function start() {
+    if (raf === 0) {
+      last = 0;
+      raf = requestAnimationFrame(frame);
+    }
+  }
+
+  function stop() {
+    if (raf !== 0) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  }
+
+  // A hidden tab gets no rAF at all, not a loop that returns early.
+  function onVisibility() {
+    const visible = document.visibilityState === 'visible';
+    fieldState.visible = visible;
+    if (visible) start();
+    else stop();
+  }
+  document.addEventListener('visibilitychange', onVisibility);
+
+  start();
+
+  return {
+    destroy() {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+      resizeObserver.disconnect();
+      gl.deleteBuffer(pointsPos);
+      gl.deleteBuffer(pointsMeta);
+      gl.deleteBuffer(trendPos);
+      gl.deleteProgram(pointsProgram);
+      gl.deleteProgram(trendProgram);
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    },
+  };
+}
