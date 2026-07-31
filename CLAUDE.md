@@ -7,8 +7,19 @@
 - `npm run test:e2e` — Playwright smoke tests
 - `npm run lh` — local Lighthouse against the production build
 - `npm run data` — rebuild the field from `data/training.json` (runs on `prebuild`)
+- `npm run data:static` — regenerate `lib/generated/{og-trend,static-assets}.ts` from
+  `app/og-display.ttf` and `public/`, so `node:fs` reads happen at build time only
+  (Cloudflare Workers has no filesystem at request time; runs on `prebuild`)
+- `npm run preview` — build + serve the Workers bundle locally via wrangler
+- `npm run deploy` — build + deploy the Workers bundle (`wrangler login` first)
 
 ## Architecture
+- Deploy target is Cloudflare Workers via `@opennextjs/cloudflare` (`wrangler.jsonc`,
+  `open-next.config.ts`), server-rendered — not Cloudflare Pages, not static export.
+  The Workers runtime has no filesystem: any `node:fs` read must happen at build
+  time (see `npm run data:static` above), never inside a component or route
+  handler that can execute on a request. `npm run build:pages` (static export to
+  GitHub Pages) is a separate one-off target, untouched by any of this.
 - Next.js App Router, TypeScript strict. Single page, anchor navigation.
 - ONE persistent WebGL canvas in `components/field/`, mounted once, fixed behind
   the DOM, driven by `lib/field-state.ts`. Never mount per-section scenes.

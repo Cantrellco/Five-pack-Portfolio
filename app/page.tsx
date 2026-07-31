@@ -11,6 +11,7 @@ import { Panel } from '@/components/deck/Panel';
 import { TabBar } from '@/components/deck/TabBar';
 import { FieldMount } from '@/components/field/FieldMount';
 import { MotionProvider } from '@/components/motion/MotionProvider';
+import { Skills } from '@/components/work/Skills';
 import { WorkDeckProvider } from '@/components/work/WorkDeckContext';
 import { WorkGrid } from '@/components/work/WorkGrid';
 import { WorkProject } from '@/components/work/WorkPanel';
@@ -70,6 +71,7 @@ export default async function Page() {
                 <Panel id="work">
                   <WorkDeckProvider>
                     <WorkGrid />
+                    <Skills />
 
                     <WorkProject id="workout-buddy">
                       <Flagship />

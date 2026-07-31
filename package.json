@@ -6,18 +6,23 @@
   "scripts": {
     "dev": "next dev --webpack",
     "data": "node scripts/build-field-data.mjs",
-    "prebuild": "npm run data",
+    "data:static": "node scripts/build-static-assets.mjs",
+    "prebuild": "npm run data && npm run data:static",
     "build": "next build",
-    "build:pages": "npm run data && GITHUB_PAGES=true next build && GITHUB_PAGES=true node scripts/rewrite-base-path.mjs",
+    "build:pages": "npm run data && npm run data:static && GITHUB_PAGES=true next build && GITHUB_PAGES=true node scripts/rewrite-base-path.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "lh": "lhci autorun",
-    "fonts": "python3 scripts/subset-fonts.py"
+    "fonts": "python3 scripts/subset-fonts.py",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@opennextjs/cloudflare": "^1.20.2",
     "gsap": "^3.15.0",
     "lenis": "^1.3.25",
     "next": "^16.2.12",
@@ -39,6 +44,7 @@
     "eslint-config-next": "^16.2.12",
     "postcss": "^8.5.25",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.118.0"
   }
 }

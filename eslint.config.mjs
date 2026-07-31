@@ -13,6 +13,10 @@ const config = [
       'test-results/**',
       '.lighthouseci/**',
       'next-env.d.ts',
+      /* OpenNext's Cloudflare bundle — generated output, not source. */
+      '.open-next/**',
+      '.wrangler/**',
+      'cloudflare-env.d.ts',
       /* Agent tooling, not site code. These are vendored helper scripts for
          the local Claude/ruflo setup — they ship with their own style and
          their own lint errors, and letting them fail `npm run lint` makes the

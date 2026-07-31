@@ -34,8 +34,8 @@ export function MotionProvider() {
 
     /**
      * From `lg` up the document does not scroll — the right pane does. Which
-     * element is doing the scrolling decides where progress is read from,
-     * which element ScrollTrigger observes, and whether Lenis runs at all.
+     * element is doing the scrolling decides which element ScrollTrigger
+     * observes, and whether Lenis runs at all.
      *
      * Below `lg` this is null and everything behaves exactly as it did when
      * the page was one long document.
@@ -45,31 +45,12 @@ export function MotionProvider() {
       ? (document.getElementById('deck-scroller') as HTMLElement | null)
       : null;
 
-    const onPaneScroll = () => {
-      readProgress();
-    };
-
-    function readProgress() {
-      if (pane) {
-        const max = pane.scrollHeight - pane.clientHeight;
-        fieldState.progress = max > 0 ? Math.min(1, Math.max(0, pane.scrollTop / max)) : 0;
-        return;
-      }
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      fieldState.progress = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
-    }
-
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (reduced) {
       document.documentElement.classList.remove('js');
       gsap.set(all, { clearProps: 'opacity,transform,willChange' });
-      readProgress();
-      const target: HTMLElement | Window = pane ?? window;
-      target.addEventListener('scroll', onPaneScroll, { passive: true });
-      return () => {
-        target.removeEventListener('scroll', onPaneScroll);
-      };
+      return;
     }
 
     // ScrollTrigger has to observe the same element the reader is scrolling.
@@ -139,9 +120,7 @@ export function MotionProvider() {
     let lenis: Lenis | null = null;
     let tick: ((time: number) => void) | null = null;
 
-    if (pane) {
-      pane.addEventListener('scroll', onPaneScroll, { passive: true });
-    } else {
+    if (!pane) {
       lenis = new Lenis({
         duration: 1.05,
         easing: ease,
@@ -153,7 +132,6 @@ export function MotionProvider() {
 
       lenis.on('scroll', () => {
         ScrollTrigger.update();
-        readProgress();
       });
 
       tick = (time: number) => lenis!.raf(time * 1000);
@@ -198,7 +176,6 @@ export function MotionProvider() {
     };
     document.addEventListener('visibilitychange', onVisibility);
 
-    readProgress();
     ScrollTrigger.refresh();
 
     // A panel swap replaces the document under the scroll layer: the height
@@ -248,7 +225,6 @@ export function MotionProvider() {
       window.removeEventListener('touchcancel', onTouchEnd);
       window.removeEventListener('deck:change', onDeckChange);
       document.removeEventListener('visibilitychange', onVisibility);
-      pane?.removeEventListener('scroll', onPaneScroll);
       if (tick) gsap.ticker.remove(tick);
       lenis?.destroy();
       ScrollTrigger.defaults({ scroller: undefined });

@@ -99,7 +99,6 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
     position: gl.getAttribLocation(pointsProgram, 'position'),
     aMeta: gl.getAttribLocation(pointsProgram, 'aMeta'),
     uTime: gl.getUniformLocation(pointsProgram, 'uTime'),
-    uProgress: gl.getUniformLocation(pointsProgram, 'uProgress'),
     uAspect: gl.getUniformLocation(pointsProgram, 'uAspect'),
     uPixelRatio: gl.getUniformLocation(pointsProgram, 'uPixelRatio'),
     uDensity: gl.getUniformLocation(pointsProgram, 'uDensity'),
@@ -118,7 +117,6 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
 
   // ---- state driven by the page ------------------------------------------
   let time = 0;
-  let progress = 0;
   let pointerX = 0.5;
   let pointerY = 0.5;
   let density = 1;
@@ -159,7 +157,6 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
     last = now;
 
     time += dt;
-    progress = approach(progress, fieldState.progress, 9, dt);
 
     // Slow enough to read as weight rather than as a cursor effect.
     pointerX = approach(pointerX, (fieldState.pointerX + 1) / 2, 1.7, dt);
@@ -173,7 +170,6 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
     // --- the field ---------------------------------------------------------
     gl!.useProgram(pointsProgram);
     gl!.uniform1f(fieldLoc.uTime, time);
-    gl!.uniform1f(fieldLoc.uProgress, progress);
     gl!.uniform1f(fieldLoc.uAspect, aspect);
     gl!.uniform1f(fieldLoc.uPixelRatio, dpr);
     gl!.uniform1f(fieldLoc.uDensity, density);

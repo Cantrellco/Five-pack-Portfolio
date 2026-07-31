@@ -6,6 +6,15 @@ import { WORK_TABS } from '@/content/nav';
 import { useWorkDeck } from './WorkDeckContext';
 
 /**
+ * Frame-rate independent approach, identical to `renderer.ts`'s own —
+ * `rate` is roughly "fraction closed per second", so the pointer here eases
+ * with the same weight and inertia the field's own `uPointer` uniform has,
+ * rather than snapping straight to the cursor.
+ */
+const approach = (current: number, target: number, rate: number, dt: number) =>
+  current + (target - current) * (1 - Math.exp(-rate * dt));
+
+/**
  * Seeded, not `Math.random()` — a fixed seed means every call to `rand()`
  * returns the same sequence on the server and on the client, so the scatter
  * it drives hydrates clean. Real randomness would draw a different one on
@@ -63,23 +72,38 @@ function buildDustTile(seed: number, size: number, count: number) {
 const DUST_TILE_URL = buildDustTile(4242, 140, 26);
 
 /**
- * The live layer, on top of the tile: ninety points, each drifting and
- * fading on its own loop via CSS `transform`/`opacity` alone, which is what
- * the static tile cannot give this — motion. Together they are the same
- * split the field itself draws: a texture built from density, plus a slow
- * drift over it.
+ * The live layer, on top of the tile: ninety points, each wandering on its
+ * own loop via CSS `transform` alone, at its own fixed opacity — which is
+ * what the static tile cannot give this — motion, of the same kind the field
+ * itself has. Not a rise-and-fade: `fieldVert`'s own drift is a two-axis sine
+ * wander with no time term in its alpha at all, so these motes hold a
+ * constant opacity and only ever wander, same as the shader's points. The
+ * shader's own drift is barely a pixel — invisible on any one of its 18,067
+ * points, and only reads as motion in aggregate. Ninety motes have no
+ * aggregate to hide in, so the wander is sized and paced to be seen on each
+ * one alone: bigger and quicker than the field's own, same as the field's
+ * point size and density are already scaled up for a mote count two orders
+ * smaller than the field's vertex count.
  */
 const DUST_COUNT = 90;
 const DUST = (() => {
   const rand = mulberry32(1337);
-  return Array.from({ length: DUST_COUNT }, () => ({
-    x: `${(rand() * 100).toFixed(1)}%`,
-    y: `${(rand() * 100).toFixed(1)}%`,
-    size: `${(1 + rand() * 1.8).toFixed(2)}px`,
-    peak: (0.15 + rand() * 0.2).toFixed(2),
-    duration: `${(7 + rand() * 9).toFixed(1)}s`,
-    delay: `-${(rand() * 14).toFixed(1)}s`,
-  }));
+  return Array.from({ length: DUST_COUNT }, () => {
+    const xFrac = rand();
+    const yFrac = rand();
+    return {
+      xFrac,
+      yFrac,
+      x: `${(xFrac * 100).toFixed(1)}%`,
+      y: `${(yFrac * 100).toFixed(1)}%`,
+      size: `${(1 + rand() * 1.8).toFixed(2)}px`,
+      peak: (0.15 + rand() * 0.2).toFixed(2),
+      dx: `${(7 + rand() * 12).toFixed(2)}px`,
+      dy: `${(7 + rand() * 12).toFixed(2)}px`,
+      duration: `${(5 + rand() * 6).toFixed(1)}s`,
+      delay: `-${(rand() * 11).toFixed(1)}s`,
+    };
+  });
 })();
 
 /**
@@ -87,28 +111,121 @@ const DUST = (() => {
  * `.work-dialog-body` and is positioned against the dialog itself, so it
  * holds still as the case study underneath it scrolls, the way motes suspend
  * in a shaft of light regardless of what passes beneath them, and stays as
- * dense over the last paragraph as over the first. No canvas, no JS render
- * loop, nothing this site's one WebGL surface has to share with a second
- * scene — a tiled background and ninety `<span>`s.
+ * dense over the last paragraph as over the first. No canvas, no persistent
+ * JS render loop — a tiled background and ninety `<span>` pairs, with the one
+ * loop below running only while a dialog is actually open, and only to nudge
+ * each mote's rest position away from the pointer, the same way `fieldVert`
+ * pushes its own points away from `uPointer`.
+ *
+ * Each mote is two nested elements rather than one: `transform` is what the
+ * CSS wander animation (`work-dust-drift`) already animates on the inner
+ * span, so a repel effect stacked onto the SAME property would fight the
+ * keyframes for it every frame the animation wins that fight, since a
+ * running CSS animation overrides an element's own inline style for any
+ * property it targets. Nesting keeps them on separate elements: the outer
+ * anchor holds the rest position (`--x`/`--y`) and takes the pointer's push
+ * as an inline `transform`; the inner span keeps its own ambient wander
+ * untouched. Both transforms are plain 2D translations, so they compose.
  */
-function DustMotes() {
+function DustMotes({ isOpen }: { isOpen: boolean }) {
+  const fieldRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const field = fieldRef.current;
+    if (!field) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const anchorEls = Array.from(field.querySelectorAll<HTMLElement>('.work-dust-anchor'));
+    const motes: { el: HTMLElement; x: number; y: number }[] = [];
+    for (let i = 0; i < anchorEls.length; i++) {
+      const el = anchorEls[i];
+      const d = DUST[i];
+      if (el && d) motes.push({ el, x: d.xFrac, y: d.yFrac });
+    }
+
+    let rect = field.getBoundingClientRect();
+    const observer = new ResizeObserver(() => {
+      rect = field.getBoundingClientRect();
+    });
+    observer.observe(field);
+
+    // Eased, not snapped straight to the cursor — see `approach` above.
+    let pointerX = 0.5;
+    let pointerY = 0.5;
+    let targetX = 0.5;
+    let targetY = 0.5;
+    let hasPointer = false;
+
+    const onPointerMove = (event: PointerEvent) => {
+      targetX = (event.clientX - rect.left) / rect.width;
+      targetY = (event.clientY - rect.top) / rect.height;
+      hasPointer = true;
+    };
+    window.addEventListener('pointermove', onPointerMove);
+
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.1);
+      last = now;
+      if (hasPointer) {
+        pointerX = approach(pointerX, targetX, 1.7, dt);
+        pointerY = approach(pointerY, targetY, 1.7, dt);
+      }
+      // Same shape as `fieldVert`'s own "--- pointer ---" block — aspect-
+      // corrected distance, exponential falloff — but not the same constants.
+      // That shader's 7.0/0.055 pair is tuned for a canvas spanning the whole
+      // scrolling page: "close to the pointer" there still covers most of a
+      // viewport out of 18,067 points, so the push reads as widespread. Ported
+      // literally onto a ~800px-wide dialog with 90 points, the same falloff
+      // only reaches motes within roughly 100px of the cursor — everything
+      // else gets a sub-pixel nudge that just looks inert. REPEL_FALLOFF is
+      // loosened (not the shape, just the radius) so a couple dozen motes
+      // clear their neighborhood as the cursor passes, the same proportion of
+      // the field the shader moves, scaled to how few points there are here.
+      const REPEL_FALLOFF = 20.0;
+      const REPEL_STRENGTH = 0.06;
+      const aspect = rect.width / rect.height;
+      for (const mote of motes) {
+        const dx = (mote.x - pointerX) * aspect;
+        const dy = mote.y - pointerY;
+        const dist2 = dx * dx + dy * dy;
+        const pull = Math.exp(-dist2 * REPEL_FALLOFF) * REPEL_STRENGTH;
+        const len = Math.sqrt(dist2) + 1e-5;
+        const offsetX = ((dx / len) * pull * rect.width).toFixed(2);
+        const offsetY = ((dy / len) * pull * rect.height).toFixed(2);
+        mote.el.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    let raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('pointermove', onPointerMove);
+      observer.disconnect();
+      for (const mote of motes) mote.el.style.transform = '';
+    };
+  }, [isOpen]);
+
   return (
-    <div className="work-dust-field" aria-hidden="true" style={{ backgroundImage: DUST_TILE_URL }}>
+    <div className="work-dust-field" aria-hidden="true" style={{ backgroundImage: DUST_TILE_URL }} ref={fieldRef}>
       {DUST.map((d, i) => (
-        <span
-          key={i}
-          className="work-dust"
-          style={
-            {
-              '--x': d.x,
-              '--y': d.y,
-              '--size': d.size,
-              '--peak': d.peak,
-              '--duration': d.duration,
-              '--delay': d.delay,
-            } as CSSProperties
-          }
-        />
+        <span key={i} className="work-dust-anchor" style={{ '--x': d.x, '--y': d.y, '--size': d.size } as CSSProperties}>
+          <span
+            className="work-dust"
+            style={
+              {
+                '--peak': d.peak,
+                '--dx': d.dx,
+                '--dy': d.dy,
+                '--duration': d.duration,
+                '--delay': d.delay,
+              } as CSSProperties
+            }
+          />
+        </span>
       ))}
     </div>
   );
@@ -182,7 +299,7 @@ export function WorkProject({ id, children }: { id: string; children: ReactNode 
     >
       {enhanced && (
         <>
-          <DustMotes />
+          <DustMotes isOpen={isOpen} />
           <button
             type="button"
             className="work-dialog-close"

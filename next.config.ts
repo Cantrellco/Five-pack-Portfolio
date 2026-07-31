@@ -1,4 +1,10 @@
 import type { NextConfig } from 'next';
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
+// Lets `next dev` reach the local Cloudflare bindings declared in
+// wrangler.jsonc (ASSETS, IMAGES, WORKER_SELF_REFERENCE). No-ops for the
+// GitHub Pages export build below.
+initOpenNextCloudflareForDev();
 
 // Set only for the one-off static export pushed to GitHub Pages (npm run
 // build:pages). The real build/deploy target is server-rendered and is

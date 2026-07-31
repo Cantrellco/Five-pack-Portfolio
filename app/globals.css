@@ -1169,6 +1169,16 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: var(--sp-md);
+  /* The register marks on an edge tile (`.work-tile::before`/`::after`,
+     below) sit outside the tile's own box by `--sp-2xs`, which used to be
+     1px and went unnoticed but now is not — a tile flush against the grid's
+     own boundary let that corner mark poke past it and register as real
+     horizontal overflow (an equal negative margin here to cancel the visual
+     inset just moves the same overflow one level up, onto whatever contains
+     the grid). Padding gives every edge that clearance instead; the tiles
+     sit `--sp-2xs` inside where the surrounding prose does, which reads as
+     nothing next to a gap already sized in `--sp-md`. */
+  padding: var(--sp-2xs);
 }
 
 .work-tile {
@@ -1184,18 +1194,19 @@ body {
 }
 
 /* A pair of register marks, the kind a printer lines up plates against —
-   inset and unlit at rest, snapping out to the true corner on hover the way
-   a viewfinder locks onto a subject. Only two, opposite corners, is
-   deliberate: the mark implies a frame without drawing the whole thing a
-   second time over the hairline border already there. The same device
-   reappears, permanently lit, framing whichever tile's dialog is open — the
-   marks that targeted it become the ones holding it open. */
+   held clear of the hairline border so a mark never fuses with the edge
+   it targets, unlit at rest, snapping to full opacity and scale on hover
+   the way a viewfinder locks onto a subject. Only two, opposite corners,
+   is deliberate: the mark implies a frame without drawing the whole thing
+   a second time over the border already there. The same device reappears,
+   permanently lit, framing whichever tile's dialog is open — the marks
+   that targeted it become the ones holding it open. */
 .work-tile::before,
 .work-tile::after {
   content: '';
   position: absolute;
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1.15rem;
+  height: 1.15rem;
   border: 1.5px solid var(--signal);
   opacity: 0;
   transform: scale(0.6);
@@ -1206,16 +1217,16 @@ body {
 }
 
 .work-tile::before {
-  top: -1px;
-  left: -1px;
+  top: calc(-1 * var(--sp-2xs));
+  left: calc(-1 * var(--sp-2xs));
   border-right: 0;
   border-bottom: 0;
   transform-origin: top left;
 }
 
 .work-tile::after {
-  bottom: -1px;
-  right: -1px;
+  bottom: calc(-1 * var(--sp-2xs));
+  right: calc(-1 * var(--sp-2xs));
   border-left: 0;
   border-top: 0;
   transform-origin: bottom right;
@@ -1280,6 +1291,126 @@ body {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ---- Skills, as a wave -----------------------------------------------------
+   Two forces at once: the whole track drifts left on a loop, and every orb
+   on it rides its own large, continuous vertical sine, each one's clock
+   offset from its neighbour's by a fixed phase step — the same amplitude and
+   phase step the vertical-only version settled on, matched against the row
+   of circular marks on antigravity.google. The phase step is what makes
+   sixteen independent `translateY` loops read as one wave travelling through
+   the row rather than sixteen things jittering on their own; the sideways
+   drift is what turns that wave into something that keeps arriving instead
+   of sitting in place. Transform only, on two different elements
+   (`.skills-track` moves sideways, each `.skill-orb` moves up and down), so
+   nothing here ever triggers layout. */
+
+/* The mask fades each edge rather than clipping the row hard — the same
+   linear-gradient mask `.deck-content` uses to hide scrolled text under the
+   floating tab row, applied here so an orb mid-scroll thins out instead of
+   vanishing at a hard line. Padding-block, not zero: `overflow: hidden` clips
+   at this box's own edge, and `.skill-orb`'s bob rides a full 1.1rem above
+   and below its resting line — with no padding the top and bottom of that
+   swing clip against the viewport at the peak of the arc, which reads as the
+   orb itself being cut off rather than as a clipped container. The padding
+   is the swing's headroom. */
+.skills-track-viewport {
+  overflow: hidden;
+  width: 100%;
+  padding-block: var(--sp-md);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 5%, black 95%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 5%, black 95%, transparent 100%);
+}
+
+.skills-track {
+  display: flex;
+  width: max-content;
+  animation: skills-scroll 38s linear infinite;
+}
+
+.skills-set {
+  display: flex;
+  gap: var(--sp-lg);
+  padding-inline-end: var(--sp-lg);
+}
+
+.skill-orb {
+  display: flex;
+  flex: none;
+  width: 5.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3xs);
+  /* `ease-in-out`, not the site's usual `--motion-ease`: that curve is
+     overdamped by design, built for a transition that settles once and
+     stops — it has real slope at both ends of a segment, so a looping
+     animation built from it snaps into a new direction at every keyframe
+     instead of easing through it. `ease-in-out` has zero slope at each
+     stop, which is what makes the reversal at the top and bottom of the
+     swing read as flowing rather than jumpy. */
+  animation: skill-bob 3.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.32s);
+}
+
+.skill-orb-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background-color: var(--paper-2);
+  color: var(--ink);
+  transition: border-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease);
+}
+
+.skill-orb:hover .skill-orb-circle {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.skill-orb-circle svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.skill-orb-name {
+  color: var(--graphite);
+  text-align: center;
+  line-height: var(--lh-tight);
+}
+
+/* A full cycle — up, back to the line, down, back to the line — rather than
+   a single bump that only ever moves one way and snaps back. Symmetric
+   around the resting position, the way a real wave is, and — matched to the
+   reference — big enough to actually read as one: about a third of the
+   orb's own diameter, not a shiver. */
+@keyframes skill-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-1.1rem);
+  }
+  75% {
+    transform: translateY(1.1rem);
+  }
+}
+
+@keyframes skills-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skills-track,
+  .skill-orb {
+    animation: none;
+  }
 }
 
 /* ---- The dialog: one project's full case study -----------------------------
@@ -1416,7 +1547,7 @@ body {
    Held against the dialog itself, not `.work-dialog-body` — this stays put
    as the case study underneath it scrolls, the way motes suspend in a shaft
    of light regardless of what passes beneath them. `overflow: hidden` here
-   keeps a mote's rise from ever poking past the frame it drifts inside. */
+   keeps a mote's drift from ever poking past the frame it wanders inside. */
 .work-dust-field {
   position: absolute;
   inset: 0;
@@ -1429,33 +1560,58 @@ body {
   background-repeat: repeat;
 }
 
+/* The rest position, in two parts: `--x`/`--y` place the anchor once, and
+   `WorkPanel.tsx`'s pointer effect writes an inline `transform` on it every
+   frame a dialog is open, nudging that rest position away from the cursor —
+   `fieldVert`'s own "--- pointer ---" push, aimed at a dialog instead of the
+   full canvas. Split from `.work-dust` below because a running CSS animation
+   overrides an element's own inline style for any property it targets: the
+   wander keyframes already own `transform` on the inner span, so the pointer
+   push needs a `transform` of its own, on a different element, for the two
+   to compose instead of fight. */
+.work-dust-anchor {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+}
+
 /* A round mark with a soft edge, not a flat disc — `radial-gradient` fades
    the fill out inside the mote's own box instead of cutting it off with
    `border-radius`, the closest CSS gets to the field's own fragment shader:
    "a round mark with a soft edge. No glow, no halo — a pen touching paper." */
 .work-dust {
   position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--size);
-  height: var(--size);
+  inset: 0;
   background: radial-gradient(circle, var(--ink) 0%, var(--ink) 40%, transparent 75%);
-  opacity: 0;
-  animation: work-dust-rise var(--duration) var(--motion-ease) var(--delay) infinite;
+  /* Held constant, not animated: `fieldVert` gives every point a fixed alpha
+     from its own volume, with no time term in it at all — the field never
+     fades a mark in or out, only ever moves it. This mote does the same. */
+  opacity: var(--peak);
+  animation: work-dust-drift var(--duration) var(--motion-ease) var(--delay) infinite;
 }
 
-@keyframes work-dust-rise {
+/* The field's own drift (fieldVert, "--- drift ---") is two damped sine waves
+   on independent axes and phases, `sin(p.y*6.1 + t + index*0.0007)` crossed
+   with `cos(p.x*5.3 - t*0.83 + index*0.0011)` — a wander, not a rise, and
+   small: 0.011 of the full canvas. `--dx`/`--dy` are that same idea sized to
+   a mote's own box (a few pixels), and four keyframes swinging through both
+   signs of each is the cheapest CSS approximation of two out-of-phase sine
+   waves without an actual sine curve. Nothing here touches opacity.  */
+@keyframes work-dust-drift {
   0%,
   100% {
-    transform: translateY(0);
-    opacity: 0;
+    transform: translate(0, 0);
   }
-  15%,
+  25% {
+    transform: translate(var(--dx), calc(var(--dy) * -1));
+  }
+  50% {
+    transform: translate(calc(var(--dx) * -0.6), calc(var(--dy) * 0.4));
+  }
   75% {
-    opacity: var(--peak);
-  }
-  100% {
-    transform: translateY(-2.5rem);
+    transform: translate(calc(var(--dx) * -1), var(--dy));
   }
 }
 

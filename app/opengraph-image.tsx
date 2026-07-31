@@ -1,8 +1,8 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { profile } from '@/content/profile';
 import { fieldStats } from '@/lib/generated/field-stats';
+import { ogDisplayFontBase64 } from '@/lib/generated/static-assets';
+import { ogTrendSvg } from '@/lib/generated/og-trend';
 
 export const alt = `${profile.name} — Full-stack engineer & AI developer`;
 export const size = { width: 1200, height: 630 };
@@ -17,13 +17,9 @@ export const dynamic = 'force-static';
  * keep in sync. Satori cannot read woff2, so the display font ships alongside
  * as a pinned TTF instance (see scripts/subset-fonts.py).
  */
-export default async function OpengraphImage() {
-  const [display, trend] = await Promise.all([
-    readFile(join(process.cwd(), 'app/og-display.ttf')),
-    readFile(join(process.cwd(), 'public/field/trend.svg'), 'utf8'),
-  ]);
-
-  const curve = `data:image/svg+xml;base64,${Buffer.from(trend).toString('base64')}`;
+export default function OpengraphImage() {
+  const display = Buffer.from(ogDisplayFontBase64, 'base64');
+  const curve = `data:image/svg+xml;base64,${Buffer.from(ogTrendSvg).toString('base64')}`;
 
   return new ImageResponse(
     (

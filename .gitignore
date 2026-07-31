@@ -2,6 +2,9 @@ node_modules/
 .next/
 out/
 build/
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
 
 # test + audit output
 /playwright-report/
@@ -16,6 +19,7 @@ build/
 next-env.d.ts
 
 .env*.local
+.dev.vars
 .DS_Store
 .vercel
 
