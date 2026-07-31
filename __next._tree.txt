@@ -1,0 +1,5 @@
+:HL["/Five-pack-Portfolio/_next/static/chunks/3jlg46n93wmsj.css","style"]
+:HL["/Five-pack-Portfolio/fonts/martian-mono.woff2","font",{"crossOrigin":"anonymous","type":"font/woff2"}]
+:HL["/Five-pack-Portfolio/fonts/instrument-sans.woff2","font",{"crossOrigin":"anonymous","type":"font/woff2"}]
+:HL["/Five-pack-Portfolio/fonts/newsreader-display.woff2","font",{"crossOrigin":"anonymous","type":"font/woff2"}]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"ZRM4GCYFpxdvpfKMpnzh4"}
