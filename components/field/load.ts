@@ -4,8 +4,6 @@ export type FieldData = {
   positions: Float32Array;
   /** vec3 per point: (index, volume 0..1, lift index) */
   meta: Float32Array;
-  /** Line segment pairs for the per-lift progression curve. */
-  trend: Float32Array;
   r2: [number, number];
 };
 
@@ -13,7 +11,6 @@ type Manifest = {
   buffer: string;
   count: number;
   r2: [number, number];
-  trend: Array<{ id: string; points: Array<[number, number]> }>;
 };
 
 const U16 = 65535;
@@ -26,10 +23,14 @@ const U16 = 65535;
  * All this does is widen integers into floats.
  */
 export async function loadField(signal: AbortSignal): Promise<FieldData> {
-  const manifestRes = await fetch('/field/manifest.json', { signal });
+  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+  const manifestRes = await fetch(`${base}/field/manifest.json`, { signal });
   if (!manifestRes.ok) throw new Error(`manifest ${manifestRes.status}`);
   const manifest: Manifest = await manifestRes.json();
 
+  // manifest.buffer is data, not a literal in this file — the GitHub Pages
+  // postbuild rewrite already prefixes it inside the static manifest.json,
+  // so adding `base` again here would double it.
   const bufferRes = await fetch(manifest.buffer, { signal });
   if (!bufferRes.ok) throw new Error(`buffer ${bufferRes.status}`);
   const raw = new Uint16Array(await bufferRes.arrayBuffer());
@@ -52,22 +53,10 @@ export async function loadField(signal: AbortSignal): Promise<FieldData> {
     meta[o + 2] = (packed >> 12) & 0xf;
   }
 
-  // Polylines to line-segment pairs, which is what LineSegments wants and what
-  // keeps every lift's curve in one draw call.
-  const segments: number[] = [];
-  for (const lift of manifest.trend) {
-    for (let i = 1; i < lift.points.length; i += 1) {
-      const a = lift.points[i - 1]!;
-      const b = lift.points[i]!;
-      segments.push(a[0], a[1], 0, b[0], b[1], 0);
-    }
-  }
-
   return {
     count,
     positions,
     meta,
-    trend: new Float32Array(segments),
     r2: manifest.r2,
   };
 }

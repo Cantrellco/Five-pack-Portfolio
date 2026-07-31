@@ -6,6 +6,13 @@ export type GithubSummary = {
   languages: { name: string; share: number }[];
 };
 
+/** Shared by every place `lastPush` is shown: absolute, not relative — a
+ *  server-rendered "3 days ago" goes stale the moment the visitor keeps the
+ *  tab open, and silently wrong the moment the daily revalidation lapses. */
+export function formatPushDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 /**
  * Repo metadata, fetched at BUILD time and revalidated daily.
  *

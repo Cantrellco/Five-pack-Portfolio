@@ -72,18 +72,12 @@ export function FieldMount() {
 
   const onLost = useCallback(() => setLive(false), []);
 
-  // `field-live` also fades out the static curve inside the figure, so the
-  // canvas draws the plot rather than doubling it.
-  useEffect(() => {
-    document.documentElement.classList.toggle('field-live', live);
-  }, [live]);
-
   return (
     <div className="field-layer" aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element -- an inline SVG
           drawn from the same data; next/image would only add a request. */}
       <img
-        src="/field/poster.svg"
+        src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/field/poster.svg`}
         alt=""
         className="field-poster"
         data-hidden={live}

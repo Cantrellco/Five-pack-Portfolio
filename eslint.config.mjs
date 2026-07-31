@@ -13,6 +13,12 @@ const config = [
       'test-results/**',
       '.lighthouseci/**',
       'next-env.d.ts',
+      /* Agent tooling, not site code. These are vendored helper scripts for
+         the local Claude/ruflo setup — they ship with their own style and
+         their own lint errors, and letting them fail `npm run lint` makes the
+         one gate that guards the app useless for the thing it guards. */
+      '.claude/**',
+      '.agents/**',
     ],
   },
   {

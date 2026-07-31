@@ -7,8 +7,6 @@ declare global {
   interface Window {
     __inkField?: {
       progress: number;
-      resolve: number;
-      liveResolve: number;
       pointerX: number;
       pointerY: number;
       visible: boolean;

@@ -18,3 +18,15 @@ next-env.d.ts
 .env*.local
 .DS_Store
 .vercel
+
+# Ruflo local secrets and runtime data
+.env
+.env.local
+.env.*.local
+.claude-flow/
+.claude/
+.agents/
+.swarm/
+.mcp.json
+ruvector.db
+skills-lock.json

@@ -164,40 +164,673 @@ body {
   position: relative;
 }
 
-/* The editorial grid. Twelve columns from `md` up; a single column below it.
-   Labels sit in the first two columns, prose is side-set from column three —
-   left-aligned and asymmetric, never centred. */
-.grid-editorial {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--sp-md);
+/* The kicker: a mono, tracked-out eyebrow that opens a block of content,
+   sitting directly above the thing it introduces rather than beside it in
+   its own column. This replaced the old two-column `grid-editorial` split —
+   a narrow aside carrying labels and dates next to a wider prose column —
+   which read as two competing tracks of text once the deck pane narrowed the
+   whole page to roughly half its former width. One column, one voice at a
+   time: mono kicker, then the display type it labels. */
+.kicker {
+  display: block;
+  margin-bottom: var(--sp-2xs);
 }
 
-/* Grid items default to `min-width: auto`, so one unbreakable string — an
-   email address set at display size, say — makes its column refuse to shrink
-   and pushes the whole page wider than the viewport. This is the fix for that
-   entire class of bug, not a patch for one element. */
-.grid-editorial > * {
+/* --------------------------------------------------------------------- deck
+   Identity on the left, a deck of documents on the right.
+
+   The left column is sticky from `lg` up, so the name and portrait hold still
+   while the reader moves between documents. Below `lg` there is not enough
+   width for two columns of type, so it stacks and the identity block simply
+   becomes the top of the page.
+-------------------------------------------------------------------------- */
+
+.deck {
+  display: grid;
+  gap: var(--sp-xl);
+  padding-block: var(--sp-xl);
+  padding-inline: var(--gutter);
+}
+
+/* A grid item defaults to `min-width: auto` and so refuses to shrink below
+   its content.
+   The project tab row is one long line of nowrap labels that scrolls itself —
+   but only if it is allowed to be narrower than that line. Without this the
+   row cannot shrink, so it widens the column, and the column widens the
+   document into a horizontal scrollbar on a phone.
+   From `lg` up the columns are `minmax(0, …)`, which already floors them at 0;
+   this is what covers the single-column layout below that. */
+.deck > * {
   min-width: 0;
 }
 
-@media (min-width: 48rem) {
-  .grid-editorial {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: var(--sp-md);
+/* ---- The two-pane, single-screen layout -------------------------------------
+   From `lg` up the document stops scrolling. The page is exactly one viewport
+   tall, the portrait holds the left half of it, and the right half scrolls its
+   own content. Nothing below the fold, because there is no fold.
+
+   `overflow: hidden` is set on the page wrapper rather than on <body>, so the
+   lock disappears with the media query instead of persisting if the layout
+   ever changes underneath it. Below `lg` this whole block is inert and the
+   site is an ordinary scrolling document.
+---------------------------------------------------------------------------- */
+
+@media (min-width: 64rem) {
+  .page {
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
-  .col-aside {
-    grid-column: 1 / span 3;
+
+  .deck {
+    flex: 1;
+    /* Without this a grid child refuses to shrink below its content height and
+       the "one viewport" promise quietly becomes "one viewport plus overflow". */
+    min-height: 0;
+    grid-template-columns: var(--deck-split);
+    gap: 0;
+    padding: 0;
+    max-width: none;
   }
-  .col-main {
-    grid-column: 4 / span 8;
+
+  /* No border here on purpose. A hairline down the middle is what made the
+     portrait read as a plate bolted onto the page instead of the other half
+     of it — the two panes now share one paper background with nothing
+     drawn on the seam between them. */
+  .deck-identity {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
-  .col-wide {
-    grid-column: 4 / span 9;
+
+  .deck-content {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Reserves a space-taking scrollbar's width up front rather than only
+       once a panel is tall enough to overflow — without this, switching from
+       a short panel to a tall one narrows the text column by the scrollbar's
+       width exactly when it appears, and `--scrollbar-w` (measured once on
+       mount) would go stale against it. */
+    scrollbar-gutter: stable;
+    padding: var(--sp-lg) var(--gutter) var(--sp-2xl);
+    /* A hard-edged mask, not an opaque fill: it hides this element's own
+       painted content — panel text scrolling past underneath the floating
+       tabs — for the top `--masthead-h`, without touching what's behind it.
+       The field sits behind `.deck-content` regardless (`.page` is stacked
+       above `.field-layer`), so masking this element to nothing here reveals
+       the field instead of covering it. Static, so it costs nothing to scroll
+       and needs no JS to stay in sync with scroll position. */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent var(--masthead-h),
+      black var(--masthead-h)
+    );
+    mask-image: linear-gradient(to bottom, transparent var(--masthead-h), black var(--masthead-h));
   }
-  .col-full {
-    grid-column: 1 / -1;
+
+  /* The tablist, positioned off `<header>`'s flow entirely rather than sat
+     inside a row — there is no row, no bar spanning the top of the page,
+     nothing for `.page`'s flex column to reserve above `.deck`. `<header>`
+     is the containing block (sticky establishes one even with no box of its
+     own), so this still scrolls away with the rest of the masthead rather
+     than floating free over the content pane. The deck's own column split,
+     so it centres over the content pane it controls rather than the whole
+     viewport. */
+  .masthead-tabs {
+    position: absolute;
+    inset-inline: 0;
+    /* Flush with the page top on purpose, matching the `--masthead-h` the
+       `.deck-content` mask hides scrolled text behind — that mask covers
+       everything down to the tab row, not just the row itself, or scrolled
+       text would be visible in the gap above the bar. The row's own lower
+       position comes from padding on its inner wrapper instead. */
+    top: 0;
+    display: grid;
+    grid-template-columns: var(--deck-split);
+    max-width: none;
+    padding-inline: 0;
+    gap: 0;
+    pointer-events: none;
   }
+
+  .masthead-tabs > * {
+    pointer-events: auto;
+  }
+}
+
+/* The deck is already inside a `.shell`, so the shells the sections carry
+   internally would apply the page gutter a second time and indent the right
+   column away from its own grid. Inside the deck they are pass-throughs. */
+.deck-identity .shell,
+.deck-content .shell {
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+/* Sections stack inside a panel rather than inside the page, so they need
+   less air than they did as full-width bands. */
+.deck-content .section {
+  padding-block: var(--sp-xl);
+}
+
+/* Every panel opens level with the portrait's forehead rather than hugging
+   the top of the pane. Declared as a fixed offset, measured at the two-pane
+   breakpoint, rather than read off the portrait at runtime.
+   Content-only: this lives on `.deck-content`, not `.deck`, so it never
+   touches the identity column on the left.
+
+   Guarded to the same breakpoint the "forehead" it aligns to only exists at:
+   below `lg` the portrait is an ordinary in-flow block above this column, not
+   a positioned figure beside it, so there is no forehead to level with --
+   only 104px of dead air stacked on top of a column that already opens under
+   its own portrait and tab row. This rule used to carry no width guard at
+   all and paid that tax on every phone. */
+@media (min-width: 64rem) {
+  .deck-content [data-panel] > *:first-child {
+    padding-top: 6.5rem;
+    border-top: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ identity
+   The left pane: a cutout of the person, the drawing that used to be baked in
+   around them, and the name. See the note at the top of Identity.tsx.
+-------------------------------------------------------------------------- */
+
+/* From `lg` up everything inside is positioned against this box, so it has to
+   actually fill the pane — an `inset: 0` child of a zero-height parent is a
+   zero-height child, which next/image reports as a `fill` with no height. */
+.identity {
+  position: relative;
+}
+
+@media (min-width: 64rem) {
+  .identity {
+    height: 100%;
+  }
+}
+
+/* Deliberately small on a phone. At full column width the portrait was the
+   largest element in the first screen, which made the engraving the thing
+   the browser waited on before the page counted as painted — a 3.6s LCP
+   against a 2.0s budget. Set as a plate rather than a hero, it is neither. */
+.portrait {
+  position: relative;
+  margin: 0;
+  /* Paired with the `sizes` attribute in Identity.tsx — see the note there.
+     Past ~13.5rem the browser steps up to the next srcset bucket and the
+     mobile LCP budget goes with it. */
+  max-width: 13rem;
+  aspect-ratio: 1000 / 1130;
+  overflow: hidden;
+}
+
+/* No blend mode and no crop games. The file carries real alpha, so the field
+   simply shows through the transparent pixels — which is what the `darken`
+   trick here was only ever approximating.
+
+   `contain`, not `cover`. The asset is trimmed hard to the head, so there is
+   no slack left to crop into: `cover` on a tall pane would eat the ears and
+   the top of the hair. Containing it keeps the whole head, and the empty band
+   that leaves above and below is not waste — it is where the solids drift and
+   where the wordmark sits. */
+.portrait-img {
+  object-fit: contain;
+  object-position: 50% 100%;
+}
+
+@media (min-width: 64rem) {
+  /* Fills the pane. No aspect ratio of its own — the window decides the shape
+     and the figure sits on the bottom edge of it, the way a bust does. */
+  /* A box inside the pane, not the pane itself, and open at the bottom. The
+     figure stands on the floor of the pane rather than floating in the middle
+     of it — that is what stops a bust from reading as a cropped photograph:
+     the only straight edge is the one the layout already has.
+
+     The insets are the only lever on how big the head reads: shrink them and
+     the figure grows, since `contain` binds on height here. The bottom stays
+     pinned at 0 so growing the box only ever moves the top edge — the figure
+     keeps standing on the same line.
+
+     The top inset is NEGATIVE on purpose. The pane is not quite tall enough
+     to hold the figure at this size, so the box starts just above it and the
+     crown of the hair is clipped by the pane's own `overflow: hidden` — about
+     22px of it. At `0%` the figure fits exactly and clips nothing, so that is
+     the floor if the clipping ever needs to go away entirely. The source engraving is roughly
+     two thirds head, so the head's share of the pane is set by how big the
+     figure is allowed to be and by nothing else — there is no more torso in
+     the original to balance it with. */
+  .portrait {
+    position: absolute;
+    /* Top inset only, 5% smaller: was -2.6% (box 2.6% taller than the pane,
+       clipped by the pane's own overflow:hidden). Bottom stays pinned at 0
+       so the figure keeps standing on the same line — see the note above. */
+    inset: 2.5% 3% 0 1.5%;
+    max-width: none;
+    aspect-ratio: auto;
+  }
+
+  /* Anchored to the floor, so the shoulders run off the bottom of the pane
+     the way a bust sits on a plinth. `contain` still — the head is the one
+     thing here that must never be cropped. */
+  .portrait-img {
+    object-fit: contain;
+    object-position: 50% 100%;
+  }
+}
+
+/* ---- the drawing, as separate parts -------------------------------------
+   Each object is a mask rather than an `<img>`, so its colour comes from the
+   token layer instead of the fill baked into the generated SVG, which means
+   one accent change moves all eleven of them at once.
+-------------------------------------------------------------------------- */
+
+.objects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Off below `lg`. At phone width the portrait is a 13rem plate and there is
+   no room to scatter anything around it without crowding the one thing the
+   pane exists to show. */
+@media (max-width: 63.999rem) {
+  .objects {
+    display: none;
+  }
+}
+
+.obj {
+  position: absolute;
+  display: block;
+  background-color: var(--ink);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  opacity: 0.85;
+  /* Every solid rides the compositor. `will-change` is deliberately NOT set:
+     eleven promoted layers cost more than the jank they would save, and these
+     only animate transform, which is already cheap. */
+}
+
+/* ---- placement ----------------------------------------------------------
+   Eighteen solids, hand-placed against the figure's actual silhouette rather
+   than laid on a grid. The bust is contained inside `inset: 16% 14% 0 4%` and
+   stands on the floor, so it is narrow at the top (head) and wide at the
+   bottom (shoulders). That leaves three bands of clear ground, and every
+   shape sits in one of them:
+
+     top     — the full width above the hair
+     right   — everything past the face, all the way down
+     left    — beside the head only, ABOVE where the shoulders flare out
+
+   The lower left is not clear ground: the shoulder runs out to meet the edge
+   there. Only `bracket` sits that low, tucked against the margin.
+
+   Sizes run 2.75rem to 4.5rem. Below that the hairline strokes stop reading;
+   above it they start competing with the portrait instead of orbiting it.
+-------------------------------------------------------------------------- */
+
+.obj-constel {
+  top: 1%;
+  left: 5%;
+  width: 4.875rem;
+  height: 4.875rem;
+  -webkit-mask-image: url('/media/objects/constel.svg');
+  mask-image: url('/media/objects/constel.svg');
+  animation: obj-drift 13s var(--motion-ease) infinite;
+}
+
+.obj-orbit {
+  top: 6%;
+  left: 15%;
+  width: 6rem;
+  height: 6rem;
+  -webkit-mask-image: url('/media/objects/orbit.svg');
+  mask-image: url('/media/objects/orbit.svg');
+  animation: obj-spin 52s linear infinite reverse;
+}
+
+.obj-tetra {
+  top: 2%;
+  left: 30%;
+  width: 4.5rem;
+  height: 4.5rem;
+  -webkit-mask-image: url('/media/objects/tetra.svg');
+  mask-image: url('/media/objects/tetra.svg');
+  animation: obj-spin 32s linear infinite reverse;
+}
+
+.obj-spiral {
+  top: 7%;
+  left: 42%;
+  width: 5.25rem;
+  height: 5.25rem;
+  -webkit-mask-image: url('/media/objects/spiral.svg');
+  mask-image: url('/media/objects/spiral.svg');
+  animation: obj-spin 43s linear infinite;
+}
+
+.obj-burst {
+  top: 2%;
+  left: 56%;
+  width: 4.125rem;
+  height: 4.125rem;
+  -webkit-mask-image: url('/media/objects/burst.svg');
+  mask-image: url('/media/objects/burst.svg');
+  animation: obj-drift 17s var(--motion-ease) infinite;
+}
+
+.obj-hex {
+  top: 6%;
+  left: 68%;
+  width: 4.5rem;
+  height: 4.5rem;
+  -webkit-mask-image: url('/media/objects/hex.svg');
+  mask-image: url('/media/objects/hex.svg');
+  animation: obj-spin 29s linear infinite;
+}
+
+.obj-icosa {
+  top: 1%;
+  right: 3%;
+  width: 6.75rem;
+  height: 6.75rem;
+  -webkit-mask-image: url('/media/objects/icosahedron.svg');
+  mask-image: url('/media/objects/icosahedron.svg');
+  animation: obj-spin 27s linear infinite;
+}
+
+.obj-cube {
+  top: 22%;
+  right: 3%;
+  width: 4.875rem;
+  height: 4.875rem;
+  -webkit-mask-image: url('/media/objects/cube.svg');
+  mask-image: url('/media/objects/cube.svg');
+  animation: obj-spin 46s linear infinite;
+}
+
+.obj-prism {
+  top: 34%;
+  right: 11%;
+  width: 4.5rem;
+  height: 4.5rem;
+  -webkit-mask-image: url('/media/objects/prism.svg');
+  mask-image: url('/media/objects/prism.svg');
+  animation: obj-spin 34s linear infinite reverse;
+}
+
+.obj-dodeca {
+  top: 44%;
+  right: 4%;
+  width: 6.75rem;
+  height: 6.75rem;
+  -webkit-mask-image: url('/media/objects/dodeca.svg');
+  mask-image: url('/media/objects/dodeca.svg');
+  animation: obj-spin 36s linear infinite;
+}
+
+.obj-dial {
+  top: 60%;
+  right: 3%;
+  width: 5.25rem;
+  height: 5.25rem;
+  -webkit-mask-image: url('/media/objects/dial.svg');
+  mask-image: url('/media/objects/dial.svg');
+  animation: obj-spin 24s linear infinite;
+}
+
+.obj-helix {
+  top: 74%;
+  right: 6%;
+  width: 5.625rem;
+  height: 5.625rem;
+  -webkit-mask-image: url('/media/objects/helix.svg');
+  mask-image: url('/media/objects/helix.svg');
+  animation: obj-drift 15s var(--motion-ease) infinite;
+}
+
+.obj-dots {
+  bottom: 5%;
+  right: 2%;
+  width: 5.25rem;
+  height: 5.25rem;
+  -webkit-mask-image: url('/media/objects/dots.svg');
+  mask-image: url('/media/objects/dots.svg');
+  animation: obj-drift 19s var(--motion-ease) infinite;
+}
+
+.obj-octa {
+  top: 19%;
+  left: 2%;
+  width: 5.625rem;
+  height: 5.625rem;
+  -webkit-mask-image: url('/media/objects/octahedron.svg');
+  mask-image: url('/media/objects/octahedron.svg');
+  animation: obj-spin 39s linear infinite reverse;
+}
+
+.obj-graph {
+  top: 35%;
+  left: 1%;
+  width: 6.375rem;
+  height: 6.375rem;
+  -webkit-mask-image: url('/media/objects/network-graph.svg');
+  mask-image: url('/media/objects/network-graph.svg');
+  animation: obj-drift 11s var(--motion-ease) infinite;
+}
+
+.obj-wave {
+  top: 51%;
+  left: 3%;
+  width: 5.25rem;
+  height: 5.25rem;
+  -webkit-mask-image: url('/media/objects/wave.svg');
+  mask-image: url('/media/objects/wave.svg');
+  animation: obj-drift 16s var(--motion-ease) infinite;
+}
+
+.obj-arrow {
+  top: 63%;
+  left: 1%;
+  width: 4.875rem;
+  height: 4.875rem;
+  -webkit-mask-image: url('/media/objects/arrow.svg');
+  mask-image: url('/media/objects/arrow.svg');
+  animation: obj-spin 56s linear infinite;
+}
+
+.obj-bracket {
+  bottom: 12%;
+  left: 1%;
+  width: 4.5rem;
+  height: 4.5rem;
+  -webkit-mask-image: url('/media/objects/bracket.svg');
+  mask-image: url('/media/objects/bracket.svg');
+  animation: obj-drift 14s var(--motion-ease) infinite;
+}
+
+@keyframes obj-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes obj-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -1.75rem, 0) rotate(9deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obj {
+    animation: none;
+  }
+}
+
+/* ---- name plate ---------------------------------------------------------
+   Solid ink, no blend mode and no transparency: the drawing behind it can
+   afford to lose contrast, but a name that goes half-legible over the wrong
+   patch of hair cannot.
+-------------------------------------------------------------------------- */
+
+/* The wordmark. Mono uppercase rather than display serif: it has to fit the
+   corner the drawing leaves clear, and at display size two words do not. */
+.identity-name {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  margin-top: var(--sp-sm);
+  font-family: var(--ff-mono);
+  /* A scaled step rather than the next token up: the tokens climb in smaller
+     increments than this, and the wordmark is meant to read as a jump rather
+     than a nudge. Backed off from 2x — at that size it ran the full width of
+     the pane and there was nowhere clear left to put it. */
+  font-size: calc(var(--fs-xs) * 1.6);
+  font-weight: 500;
+  /* Stacked, so the leading is doing the work the space between the words
+     used to. Loose enough that the two lines read as a deliberate pair rather
+     than as one word that happened to wrap. */
+  line-height: 1.75;
+  /* Wider than the shared `--ls-label` this used to inherit, and set as an
+     offset from it so the wordmark still moves if that token is ever retuned.
+     Overridden here rather than on the token itself: `--ls-label` is also the
+     tracking for every `.label` on the site, and this is a wordmark decision,
+     not a global one. */
+  letter-spacing: calc(var(--ls-label) + 0.2em);
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Each name on its own line. `block` is what turns the inline spans into the
+   stack; the space between them in the markup then collapses at the break. */
+.identity-name span {
+  display: block;
+}
+
+/* The wordmark sits at the foot of the pane. It was in the top-left corner,
+   which stopped being clear ground the moment the figure grew: ink type on
+   the engraving's hair is unreadable at any size or weight, because the hair
+   is the same ink.
+
+   Measured rather than guessed — sampling the rendered pane, the top-left
+   band reads 0.24-0.68 mean luminance and the foot reads 0.77-0.86. That is
+   the difference between type on hair and type on paper. If the figure is
+   ever resized enough to move that boundary, re-measure before moving these:
+   the correct corner is a property of the crop, not a fixed choice. */
+@media (min-width: 64rem) {
+  .identity-name {
+    position: absolute;
+    /* Offsets from the pane's own spacing tokens rather than raw pixels, so
+       the wordmark keeps its relationship to the gutter as both scale with
+       the viewport. */
+    bottom: calc(var(--sp-lg) - 1.5rem);
+    left: calc(var(--gutter) + 2.5rem);
+    margin-top: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- tabs
+   Selection is carried by `aria-selected` for assistive technology and by the
+   rule underneath for everyone else. Colour alone never carries it.
+-------------------------------------------------------------------------- */
+
+/* The column's own tablist, for the widths where the masthead has no room for
+   one. The breakpoint lives here rather than as a `lg:hidden` utility because
+   this rule is loaded after Tailwind and would otherwise win the cascade
+   against it — two single-class selectors, last one wins. */
+.deck-tabs {
+  display: none;
+}
+
+@media (max-width: 63.999rem) {
+  .deck-tabs {
+    display: flex;
+    gap: var(--sp-md);
+    overflow-x: auto;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: var(--sp-xs);
+    margin-bottom: var(--sp-lg);
+    /* The row scrolls itself rather than widening the document. */
+    scrollbar-width: none;
+    /* Below `lg` this is the only section nav on the page, and without this it
+       scrolls away with the first panel's content like any other paragraph --
+       a native app's tab bar holds its position instead. Sticks to the
+       viewport rather than to `#deck-scroller` because that element has no
+       scroll overflow of its own at this width; the window is what scrolls.
+       A solid paper fill is required, not optional: panel text passes
+       directly underneath this once it sticks, and the site's own rule is
+       one plane of colour, never a blend, wherever content can pass behind
+       another element (see `.work-dialog::backdrop`'s note). */
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: var(--paper);
+    padding-top: var(--sp-xs);
+    margin-top: calc(var(--sp-xs) * -1);
+  }
+}
+
+.deck-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  flex: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0.2em 0;
+  font-family: var(--ff-body);
+  font-size: calc(var(--fs-sm) * 1.05 * 1.1);
+  font-weight: 500;
+  color: var(--graphite);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.22em;
+  height: 1px;
+  background-color: var(--signal);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--ink);
+}
+
+.tab[aria-selected='true']::after,
+.tab:hover::after,
+.tab:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
 }
 
 /* Hairlines are structural. They mark where one idea stops and the next
@@ -281,6 +914,612 @@ body {
   color: var(--signal);
 }
 
+/* ------------------------------------------------------------- project tabs
+   The Work panel's own row of tabs — one per project. A second row of tabs
+   under the first has to read as subordinate to it or the page has two things
+   claiming to be the navigation, so these are set in mono at label size
+   against the outer tabs' body-font sans: same mechanism, different voice.
+
+   The number is the whole of the "index" idea that a separate list used to
+   carry. It is `aria-hidden`; the tablist already announces position.
+-------------------------------------------------------------------------- */
+
+.worktabs {
+  display: flex;
+  /* Wraps rather than scrolls. Six projects do not fit across the content pane
+     on a laptop — at 1440 the row wanted 853px of a 673px column — and a tab
+     row that scrolls hides the very projects it exists to reveal. Wrapping
+     costs a second line at some widths and shows all six at every width.
+
+     It also removes the reason the row used to clip: with nothing overflowing
+     there is no scroll container, so the focus ring and the 2px selected
+     marker are simply drawn, and the hairline can go back to being a border. */
+  flex-wrap: wrap;
+  row-gap: var(--sp-xs);
+  column-gap: var(--sp-md);
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule);
+}
+
+.subtab {
+  position: relative;
+  flex: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  padding: 0 0 var(--sp-xs);
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The selected marker sits at the foot of its own tab, which on the last line
+   is the container's hairline and on a wrapped line is that line's baseline. */
+.subtab::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: var(--signal);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.subtab[aria-selected='true']::after,
+.subtab:hover::after,
+.subtab:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* A tint of graphite, not `--rule`. --rule is declared hairline-only in
+   tokens.css and setting type in it measured 1.28:1 against paper — present in
+   the markup and invisible on the screen, which is the worst of both. The tint
+   comes from color-mix rather than a new token, so the palette stays at six. */
+.subtab-num {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--graphite) 62%, var(--paper));
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+.subtab-label {
+  font-family: var(--ff-body);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--graphite);
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+.subtab:hover .subtab-label,
+.subtab:focus-visible .subtab-label {
+  color: var(--ink);
+}
+
+/* Selection is carried by the rule and by `aria-selected`, never by colour
+   alone — the number turning signal is the third cue, not the only one. */
+.subtab[aria-selected='true'] .subtab-label {
+  color: var(--ink);
+}
+
+.subtab[aria-selected='true'] .subtab-num {
+  color: var(--signal);
+}
+
+/* -------------------------------------------------------------- project rail
+   One compact line of six project names. It costs about 31px of the panel and
+   hides nothing: every name is a direct target, and where the pane is genuinely
+   too narrow the row wraps rather than scrolling, because a project you have to
+   swipe to find is a project most readers never see.
+
+   Two things move, and neither of them deforms type.
+
+   THE MARK is a single rule for the whole row rather than one underline per
+   tab. It is anchored to whichever tab is selected, so the browser interpolates
+   its left AND right edges together — the rule travels and resizes in one
+   motion, thirteen characters to eleven and back, and follows the selection
+   down to the second line when the row wraps. That width-morph is the whole
+   point; a per-tab underline scaling in and out cannot express it.
+
+   Anchor positioning reached Baseline in 2026 and only the core of it is used
+   here — `anchor-name`, `position-anchor`, `anchor()` — not `@position-try`.
+   Everything below it keeps the per-tab underline, which is what the @supports
+   block swaps out.
+
+   THE INK WIPE is two copies of the same word, identical in geometry: graphite
+   underneath, ink above, revealed left to right. Nothing moves or stretches,
+   only the amount of the word that is inked.
+
+   One deliberate exception to the transform-and-opacity rule, and the reason
+   for it: the mark animates inset properties and the wipe animates clip-path.
+   Neither reflows anything — the mark is out of flow, and clip-path is
+   composited — so the cost the rule exists to prevent is not being paid.
+--------------------------------------------------------------------------- */
+
+.rail {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  /* Six full names set at --fs-xs measure about 528px; --sp-md gaps put the row
+     at 672 against a 673px pane, which wrapped on the last name by a pixel.
+     --sp-sm brings it to ~623 and holds one line at the two-pane width. */
+  column-gap: var(--sp-sm);
+  row-gap: var(--sp-2xs);
+  align-items: baseline;
+  padding-bottom: var(--sp-2xs);
+  border-bottom: 1px solid var(--rule);
+}
+
+.rail-tab {
+  position: relative;
+  flex: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--ff-body);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.006em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rail-label {
+  color: var(--graphite);
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+/* The ink copy, laid exactly over the graphite one. Same face, same size, same
+   tracking — so the two are indistinguishable except in colour, and the wipe
+   reads as the word being inked rather than as a second word arriving. */
+.rail-ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--ink);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path var(--motion-base) var(--motion-ease);
+  pointer-events: none;
+}
+
+.rail-tab[aria-selected='true'] .rail-ink,
+.rail-tab:hover .rail-ink,
+.rail-tab:focus-visible .rail-ink {
+  clip-path: inset(0 0 0 0);
+}
+
+/* ---- The mark, where anchor positioning is not available ------------------
+   One underline per tab, scaled in from the left. Correct, and the thing the
+   supported path improves on. */
+
+.rail-mark {
+  display: none;
+}
+
+.rail-tab::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(var(--sp-2xs) * -1 - 1px);
+  height: 2px;
+  background-color: var(--signal);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.rail-tab[aria-selected='true']::after,
+.rail-tab:hover::after,
+.rail-tab:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ---- The mark, where it is ----------------------------------------------- */
+
+@supports (anchor-name: --rail-sel) {
+  /* The per-tab underlines stand down; one rule serves the whole row. */
+  .rail-tab::after {
+    content: none;
+  }
+
+  /* The anchor is not a fixed element — it is whichever tab is currently
+     selected, so changing the selection moves the thing the mark is measured
+     against and the mark interpolates to its new place and width. */
+  .rail-tab[aria-selected='true'] {
+    anchor-name: --rail-sel;
+  }
+
+  .rail-mark {
+    display: block;
+    position: absolute;
+    position-anchor: --rail-sel;
+    left: anchor(left);
+    right: anchor(right);
+    top: calc(anchor(bottom) + var(--sp-2xs));
+    height: 2px;
+    background-color: var(--signal);
+    pointer-events: none;
+    transition:
+      left var(--motion-base) var(--motion-ease),
+      right var(--motion-base) var(--motion-ease),
+      top var(--motion-base) var(--motion-ease);
+  }
+}
+
+/* ---- The project grid, inside the Work panel -------------------------------
+   All six, always. Every tile is the same size and carries the same weight —
+   nothing is hidden behind a trigger, and nothing takes a turn being the one
+   large thing among five small ones, because choosing a project is no longer
+   a comparison against its neighbours. A tile's whole job is to open its
+   dialog; the grid itself never changes once that dialog is open, and it is
+   still exactly as it was once the dialog closes. */
+
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--sp-md);
+}
+
+.work-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3xs);
+  padding: var(--sp-md);
+  border: 1px solid var(--graphite);
+  text-decoration: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* A pair of register marks, the kind a printer lines up plates against —
+   inset and unlit at rest, snapping out to the true corner on hover the way
+   a viewfinder locks onto a subject. Only two, opposite corners, is
+   deliberate: the mark implies a frame without drawing the whole thing a
+   second time over the hairline border already there. The same device
+   reappears, permanently lit, framing whichever tile's dialog is open — the
+   marks that targeted it become the ones holding it open. */
+.work-tile::before,
+.work-tile::after {
+  content: '';
+  position: absolute;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1.5px solid var(--signal);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+  pointer-events: none;
+}
+
+.work-tile::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+  transform-origin: top left;
+}
+
+.work-tile::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+  transform-origin: bottom right;
+}
+
+.work-tile:hover::before,
+.work-tile:hover::after,
+.work-tile:focus-visible::before,
+.work-tile:focus-visible::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.work-tile-name {
+  position: relative;
+  display: block;
+  font-family: var(--ff-display);
+  font-size: var(--fs-md);
+  font-weight: 400;
+  letter-spacing: var(--ls-display);
+  color: var(--ink);
+}
+
+/* The ink copy, laid exactly over the graphite one — same face, same size,
+   same tracking, so the wipe reads as the name being inked rather than as a
+   second name arriving. Pure `:hover`/`:focus-visible`, so it works with
+   scripting off too; nothing here depends on the click handler. */
+.work-tile-name-ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--ink);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path var(--motion-base) var(--motion-ease);
+  pointer-events: none;
+}
+
+.work-tile:hover .work-tile-name-ink,
+.work-tile:focus-visible .work-tile-name-ink {
+  clip-path: inset(0 0 0 0);
+}
+
+/* A ticket stub, not a floating label — the kind tag gets its own hairline
+   rather than sitting bare, the way a museum placard or a specimen tag
+   would carry its classification in a ruled box rather than loose text. */
+.work-tile-kind {
+  display: inline-block;
+  width: fit-content;
+  padding: 0.2em 0.55em;
+  border: 1px solid var(--rule);
+}
+
+.work-tile-summary {
+  color: var(--graphite);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  text-wrap: pretty;
+  /* Three lines, everywhere this rule is honoured — a real cap, not a
+     max-height crop mid-word — so six tiles of uneven summary length still
+     settle onto one shared row height instead of a ragged grid. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- The dialog: one project's full case study -----------------------------
+   Unenhanced this is simply `open` — a plain block of content, stacked with
+   the other five exactly like every other panel on the site with scripting
+   off — so none of the modal-only rules below apply to it: `:modal` matches
+   ONLY the true top-layer state `showModal()` puts it in, never the bare
+   `open` attribute this ships with as its no-JS fallback. */
+
+.work-dialog {
+  position: relative;
+  padding: 0;
+  border: 1px solid var(--rule);
+  max-width: min(94vw, 48rem);
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+/* The same register marks the grid's tiles show on hover, grown a size up
+   and lit permanently rather than on demand — as if the pair that targeted
+   this tile followed it in and is now holding the frame open. */
+.work-dialog::before,
+.work-dialog::after {
+  content: '';
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid var(--signal);
+  pointer-events: none;
+}
+
+/* Inset from the frame rather than overlapping it — `:modal` clips overflow
+   to contain a runaway screenshot or diagram, and that clip edge sits at the
+   inside of the 1px border, so a mark straddling the border like the tile's
+   own would lose a sliver of itself to it. */
+.work-dialog::before {
+  top: var(--sp-3xs);
+  left: var(--sp-3xs);
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.work-dialog::after {
+  bottom: var(--sp-3xs);
+  right: var(--sp-3xs);
+  border-left: 0;
+  border-top: 0;
+}
+
+.work-dialog:modal {
+  /* The UA stylesheet centers a modal dialog with `margin: auto` on a
+     fixed, inset-block:0 box — but Tailwind's preflight zeroes margin on
+     every element, this one included, which otherwise leaves it pinned to
+     the top-left corner of the viewport instead of centered in it. */
+  margin: auto;
+  max-height: 85vh;
+  overflow: hidden;
+}
+
+.work-dialog-body {
+  /* Top padding matched to the inline padding, not the taller `--sp-xl` the
+     bottom keeps for closing breathing room — the corner mark only needs
+     about 24px of clearance, and `--sp-xl` (up to 80px) was leaving the
+     opening line sitting closer to the dialog's vertical centre than its
+     top. */
+  padding: var(--sp-lg) var(--sp-lg) var(--sp-xl);
+}
+
+/* Flagship, Harvest and every client site wrap their content in `.section`,
+   sized for the vertical rhythm BETWEEN stacked page sections — up to 140px
+   of padding-block, top and bottom. That padding still belongs to `.section`
+   everywhere it is actually one of a stack (About, Resume, Contact); inside
+   a dialog it is a second, larger gap layered on top of the padding
+   `.work-dialog-body` already supplies, which is what was really pushing
+   the opening line "way too low" rather than the dialog's own padding. */
+.work-dialog-body > .section {
+  padding-block: 0;
+}
+
+.work-dialog:modal .work-dialog-body {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* A flat, solid scrim — no blur, nothing glass — the same reasoning as the
+   rest of the site's surfaces: one plane of colour, never two blended. */
+.work-dialog::backdrop {
+  background-color: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+/* An X drawn from two rotated bars rather than a glyph, so it never depends
+   on a font shipping the character or rendering it at a consistent weight —
+   same reasoning as every other icon on this site. */
+.work-dialog-close {
+  position: absolute;
+  top: var(--sp-md);
+  right: var(--sp-md);
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.work-dialog-close::before,
+.work-dialog-close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 1.5px;
+  background-color: var(--graphite);
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
+
+.work-dialog-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.work-dialog-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.work-dialog-close:hover::before,
+.work-dialog-close:hover::after,
+.work-dialog-close:focus-visible::before,
+.work-dialog-close:focus-visible::after {
+  background-color: var(--ink);
+}
+
+/* ---- Dust, in the light of the frame ---------------------------------------
+   Held against the dialog itself, not `.work-dialog-body` — this stays put
+   as the case study underneath it scrolls, the way motes suspend in a shaft
+   of light regardless of what passes beneath them. `overflow: hidden` here
+   keeps a mote's rise from ever poking past the frame it drifts inside. */
+.work-dust-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* `background-image` itself is set inline (a generated data URI, computed
+     once as a module constant) — this is the one property that has to stay
+     in the stylesheet instead, since a repeating tile is what turns 26 static
+     dots into the hundreds that actually cover a full dialog. */
+  background-repeat: repeat;
+}
+
+/* A round mark with a soft edge, not a flat disc — `radial-gradient` fades
+   the fill out inside the mote's own box instead of cutting it off with
+   `border-radius`, the closest CSS gets to the field's own fragment shader:
+   "a round mark with a soft edge. No glow, no halo — a pen touching paper." */
+.work-dust {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  background: radial-gradient(circle, var(--ink) 0%, var(--ink) 40%, transparent 75%);
+  opacity: 0;
+  animation: work-dust-rise var(--duration) var(--motion-ease) var(--delay) infinite;
+}
+
+@keyframes work-dust-rise {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15%,
+  75% {
+    opacity: var(--peak);
+  }
+  100% {
+    transform: translateY(-2.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-dust {
+    display: none;
+  }
+}
+
+/* ---- Opening and closing, in CSS alone --------------------------------------
+   `@starting-style` supplies the "before" state a newly-shown element
+   transitions FROM, and `allow-discrete` lets `display`/`overlay` — both
+   ordinarily instant, all-or-nothing properties — participate in a
+   transition instead of cutting it off. Together they are what let a
+   `display: none` element fade and rise into place, and fade back out
+   again on close, with no JS animation loop driving either half. */
+
+.work-dialog {
+  opacity: 0;
+  transform: translateY(var(--sp-sm)) scale(0.98);
+  transition:
+    opacity var(--motion-base) var(--motion-ease),
+    transform var(--motion-base) var(--motion-ease),
+    overlay var(--motion-base) var(--motion-ease) allow-discrete,
+    display var(--motion-base) var(--motion-ease) allow-discrete;
+}
+
+.work-dialog:modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .work-dialog:modal {
+    opacity: 0;
+    transform: translateY(var(--sp-sm)) scale(0.98);
+  }
+}
+
+.work-dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--motion-base) var(--motion-ease),
+    overlay var(--motion-base) var(--motion-ease) allow-discrete,
+    display var(--motion-base) var(--motion-ease) allow-discrete;
+}
+
+.work-dialog:modal::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .work-dialog:modal::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-dialog,
+  .work-dialog::backdrop {
+    transition: none;
+  }
+}
+
 /* The one filled control on the site: the App Store call to action. */
 .cta {
   display: inline-flex;
@@ -360,23 +1599,6 @@ body {
 .page {
   position: relative;
   z-index: 1;
-}
-
-/* The figure's static curve. Present for everyone; faded out once the canvas
-   is live and drawing the same plot into the same box. */
-.plot-fallback {
-  opacity: 1;
-  transition: opacity 600ms var(--motion-ease);
-}
-
-.field-live .plot-fallback {
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plot-fallback {
-    transition: none;
-  }
 }
 
 /* --------------------------------------------------------------- skip link

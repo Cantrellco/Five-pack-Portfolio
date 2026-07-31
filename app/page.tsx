@@ -1,38 +1,99 @@
 import { About } from '@/components/About';
-import { ClientWork } from '@/components/ClientWork';
+import { ClientSite } from '@/components/ClientSite';
 import { Contact } from '@/components/Contact';
-import { FieldNote } from '@/components/FieldNote';
 import { Flagship } from '@/components/Flagship';
-import { Footer } from '@/components/Footer';
-import { Hero } from '@/components/Hero';
+import { Harvest } from '@/components/Harvest';
+import { Identity } from '@/components/Identity';
 import { Masthead } from '@/components/Masthead';
-import { SecondProject } from '@/components/SecondProject';
+import { Resume } from '@/components/Resume';
+import { DeckProvider } from '@/components/deck/DeckContext';
+import { Panel } from '@/components/deck/Panel';
+import { TabBar } from '@/components/deck/TabBar';
 import { FieldMount } from '@/components/field/FieldMount';
 import { MotionProvider } from '@/components/motion/MotionProvider';
+import { WorkDeckProvider } from '@/components/work/WorkDeckContext';
+import { WorkGrid } from '@/components/work/WorkGrid';
+import { WorkProject } from '@/components/work/WorkPanel';
+import { sites } from '@/content/projects';
 import { getGithubSummary } from '@/lib/github';
 
 /** Static page, refreshed daily so the GitHub figures stay current. */
 export const revalidate = 86400;
 
+/**
+ * Two columns: who this is, and what they have done.
+ *
+ * The left column is the constant — name, role, portrait, the two links worth
+ * following. It is sticky on a wide screen, so it stays put while the right
+ * column changes, which is the whole idea borrowed from the reference site.
+ *
+ * The right column is a deck of documents. With scripting on, one shows at a
+ * time and the masthead is a tablist. With scripting off, all four are on the
+ * page in order and the masthead is a list of anchors — the site is then
+ * exactly the scrolling document it was before the deck existed, which is why
+ * turning JavaScript off costs nothing here.
+ */
 export default async function Page() {
   const github = await getGithubSummary();
 
   return (
     <>
       <FieldMount />
-      <div className="page">
-        <Masthead />
-        <main id="main" tabIndex={-1} className="outline-none">
-          <Hero />
-          <Flagship />
-          <FieldNote />
-          <SecondProject />
-          <ClientWork />
-          <About />
-          <Contact github={github} />
-        </main>
-        <Footer />
-      </div>
+      <DeckProvider>
+        <div className="page">
+          <Masthead />
+
+          <main id="main" tabIndex={-1} className="deck outline-none">
+            <div className="deck-identity">
+              <Identity github={github} />
+            </div>
+
+            {/* The right pane owns its own scrollbar from `lg` up, so the
+                motion layer drives Lenis and ScrollTrigger from this element
+                rather than from the window. It needs a stable id to be found. */}
+            <div className="deck-content" id="deck-scroller">
+                {/* The masthead only has room for the tablist from `lg` up.
+                    Below that it lives here, at the head of the column it
+                    controls, where it is adjacent to what it changes. */}
+                <TabBar className="deck-tabs" idPrefix="tab-column" />
+
+                <Panel id="about">
+                  <About />
+                </Panel>
+
+                <Panel id="resume">
+                  <Resume />
+                </Panel>
+
+                {/* All six projects live on the page as a grid; each opens
+                    its own case study in a dialog above it. */}
+                <Panel id="work">
+                  <WorkDeckProvider>
+                    <WorkGrid />
+
+                    <WorkProject id="workout-buddy">
+                      <Flagship />
+                    </WorkProject>
+
+                    <WorkProject id="the-harvest">
+                      <Harvest />
+                    </WorkProject>
+
+                    {sites.map((site) => (
+                      <WorkProject key={site.id} id={site.id}>
+                        <ClientSite site={site} />
+                      </WorkProject>
+                    ))}
+                  </WorkDeckProvider>
+                </Panel>
+
+              <Panel id="contact">
+                <Contact github={github} />
+              </Panel>
+            </div>
+          </main>
+        </div>
+      </DeckProvider>
       <MotionProvider />
     </>
   );

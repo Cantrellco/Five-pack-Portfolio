@@ -1,5 +1,5 @@
 import { fieldState } from '@/lib/field-state';
-import { fieldFrag, fieldVert, trendFrag, trendVert } from './shaders';
+import { fieldFrag, fieldVert } from './shaders';
 import type { FieldData } from './load';
 
 /**
@@ -13,8 +13,8 @@ import type { FieldData } from './load';
  * 106KB buffer and one draw call cannot ship a 3D engine to draw eighteen
  * thousand dots.
  *
- * What is actually needed is here: two programs, two buffers, ten uniforms and
- * a loop. The GLSL is unchanged — it was always hand-written.
+ * What is actually needed is here: one program, two buffers, eight uniforms
+ * and a loop. The GLSL is unchanged — it was always hand-written.
  */
 
 type GL = WebGL2RenderingContext | WebGLRenderingContext;
@@ -86,7 +86,6 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
   if (!gl) throw new Error('no WebGL context');
 
   const pointsProgram = link(gl, fieldVert, fieldFrag, 'field');
-  const trendProgram = link(gl, trendVert, trendFrag, 'trend');
 
   const pointsPos = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointsPos);
@@ -96,30 +95,17 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
   gl.bindBuffer(gl.ARRAY_BUFFER, pointsMeta);
   gl.bufferData(gl.ARRAY_BUFFER, data.meta, gl.STATIC_DRAW);
 
-  const trendPos = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, trendPos);
-  gl.bufferData(gl.ARRAY_BUFFER, data.trend, gl.STATIC_DRAW);
-
   const fieldLoc = {
     position: gl.getAttribLocation(pointsProgram, 'position'),
     aMeta: gl.getAttribLocation(pointsProgram, 'aMeta'),
     uTime: gl.getUniformLocation(pointsProgram, 'uTime'),
     uProgress: gl.getUniformLocation(pointsProgram, 'uProgress'),
-    uResolve: gl.getUniformLocation(pointsProgram, 'uResolve'),
     uAspect: gl.getUniformLocation(pointsProgram, 'uAspect'),
     uPixelRatio: gl.getUniformLocation(pointsProgram, 'uPixelRatio'),
     uDensity: gl.getUniformLocation(pointsProgram, 'uDensity'),
     uPointer: gl.getUniformLocation(pointsProgram, 'uPointer'),
     uR2: gl.getUniformLocation(pointsProgram, 'uR2'),
-    uPlot: gl.getUniformLocation(pointsProgram, 'uPlot'),
     uInk: gl.getUniformLocation(pointsProgram, 'uInk'),
-  };
-
-  const trendLoc = {
-    position: gl.getAttribLocation(trendProgram, 'position'),
-    uPlot: gl.getUniformLocation(trendProgram, 'uPlot'),
-    uResolve: gl.getUniformLocation(trendProgram, 'uResolve'),
-    uInk: gl.getUniformLocation(trendProgram, 'uInk'),
   };
 
   const ink = readInk();
@@ -133,7 +119,6 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
   // ---- state driven by the page ------------------------------------------
   let time = 0;
   let progress = 0;
-  let resolve = 0;
   let pointerX = 0.5;
   let pointerY = 0.5;
   let density = 1;
@@ -175,56 +160,25 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
 
     time += dt;
     progress = approach(progress, fieldState.progress, 9, dt);
-    resolve = approach(resolve, fieldState.resolve, 4.5, dt);
-    fieldState.liveResolve = resolve;
 
     // Slow enough to read as weight rather than as a cursor effect.
     pointerX = approach(pointerX, (fieldState.pointerX + 1) / 2, 1.7, dt);
     pointerY = approach(pointerY, (fieldState.pointerY + 1) / 2, 1.7, dt);
-
-    // Document space to viewport space. One scrollY read; the figure's box is
-    // measured on resize, never in here.
-    const plot = fieldState.plot;
-    let px = 0.1;
-    let py = 0.2;
-    let pw = 0.8;
-    let ph = 0.4;
-    if (plot.measured && width > 0 && height > 0) {
-      const top = plot.top - window.scrollY;
-      px = plot.left / width;
-      py = 1 - (top + plot.height) / height;
-      pw = plot.width / width;
-      ph = plot.height / height;
-    }
 
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     const aspect = width / Math.max(1, height);
 
     gl!.clear(gl!.COLOR_BUFFER_BIT);
 
-    // --- the progression curve, under the points ---------------------------
-    if (resolve > 0.01 && data.trend.length > 0) {
-      gl!.useProgram(trendProgram);
-      gl!.uniform4f(trendLoc.uPlot, px, py, pw, ph);
-      gl!.uniform1f(trendLoc.uResolve, resolve);
-      gl!.uniform3f(trendLoc.uInk, ink[0], ink[1], ink[2]);
-      gl!.bindBuffer(gl!.ARRAY_BUFFER, trendPos);
-      gl!.enableVertexAttribArray(trendLoc.position);
-      gl!.vertexAttribPointer(trendLoc.position, 3, gl!.FLOAT, false, 0, 0);
-      gl!.drawArrays(gl!.LINES, 0, data.trend.length / 3);
-    }
-
     // --- the field ---------------------------------------------------------
     gl!.useProgram(pointsProgram);
     gl!.uniform1f(fieldLoc.uTime, time);
     gl!.uniform1f(fieldLoc.uProgress, progress);
-    gl!.uniform1f(fieldLoc.uResolve, resolve);
     gl!.uniform1f(fieldLoc.uAspect, aspect);
     gl!.uniform1f(fieldLoc.uPixelRatio, dpr);
     gl!.uniform1f(fieldLoc.uDensity, density);
     gl!.uniform2f(fieldLoc.uPointer, pointerX, pointerY);
     gl!.uniform2f(fieldLoc.uR2, data.r2[0], data.r2[1]);
-    gl!.uniform4f(fieldLoc.uPlot, px, py, pw, ph);
     gl!.uniform3f(fieldLoc.uInk, ink[0], ink[1], ink[2]);
 
     gl!.bindBuffer(gl!.ARRAY_BUFFER, pointsPos);
@@ -279,9 +233,7 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
       resizeObserver.disconnect();
       gl.deleteBuffer(pointsPos);
       gl.deleteBuffer(pointsMeta);
-      gl.deleteBuffer(trendPos);
       gl.deleteProgram(pointsProgram);
-      gl.deleteProgram(trendProgram);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     },
   };

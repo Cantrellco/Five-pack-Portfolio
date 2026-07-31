@@ -44,13 +44,13 @@ data/training.json                 real logged sets: date, lift, weight, reps
         │  scripts/build-field-data.mjs   (runs at build time)
         ▼
 public/field/field-v1.bin          18,067 points × 6 bytes  →  13KB gzipped
-public/field/manifest.json         counts, ranges, per-lift trend curve
+public/field/manifest.json         counts, ranges, the two R2 constants
 public/field/poster.svg            the static frame, same points, same maths
-public/field/trend.svg             the progression curve, for the figure
+public/field/trend.svg             the progression curve, for the link-preview image
 lib/generated/field-stats.ts       the figures the page states in prose
         │
         ▼
-components/field/                  ~250 lines of WebGL: two programs, two draw calls
+components/field/                  ~350 lines of WebGL: one program, one draw call
 ```
 
 Every point is one logged rep. Nothing calls `Math.random()`.
@@ -66,19 +66,6 @@ scatters far more evenly than hash noise (no clumps, no visible lattice, which
 is what a plotter drawing wants) and is reproducible from a vertex index alone.
 The static poster runs the same two constants, so the fallback and the live
 canvas are the same drawing.
-
-### The one bold idea
-
-The field is dense and full-bleed over the hero, thins out and migrates to the
-margins as you scroll, and **resolves once** — into the actual per-lift
-progression curve — while the figure that explains it is on screen. Then it
-dissolves back.
-
-![The field resolved into eight per-lift progression curves](docs/field-resolved.png)
-
-The figure is a DOM element. The page owns the frame and labels the axes in real
-text; the canvas measures that box and draws inside it. Anyone without WebGL
-gets `trend.svg` in the same box, from the same numbers.
 
 ### Layers
 
@@ -122,14 +109,14 @@ How it stays there:
   deltas out of `gvar` and takes it from 129KB to 55KB.
 - **No 3D library.** This began on three.js and react-three-fiber. It drew
   correctly, but cost 230KB over the wire and ~1.4s of script evaluation on a
-  throttled mobile profile — Lighthouse 0.69, LCP 3.0s. The field needs two
-  shader programs, two buffers and a loop, so `components/field/renderer.ts`
+  throttled mobile profile — Lighthouse 0.69, LCP 3.0s. The field needs one
+  shader program, two buffers and a loop, so `components/field/renderer.ts`
   is written directly against WebGL. Same output, same hand-written GLSL,
   ~4KB. That single change took performance from 0.69 to 0.96.
 - **The canvas is deferred past load.** It sits behind a dynamic import that is
   not requested until after `load`, during idle time. The static poster is
   server-rendered, so there is never a blank rectangle.
-- **DPR capped at 1.75**, two draw calls, no postprocessing, point density
+- **DPR capped at 1.75**, one draw call, no postprocessing, point density
   drops automatically when frame times slip, and the render loop is cancelled
   entirely — not merely skipped — when the tab is hidden.
 - **Only transform and opacity animate.** One easing family, shared between CSS
@@ -143,7 +130,7 @@ All four paths are tested in `e2e/smoke.spec.ts`, not assumed.
 
 | Condition | Behaviour |
 |---|---|
-| JavaScript off | Full page, real text, static ink poster, static progression curve |
+| JavaScript off | Full page, real text, static ink poster |
 | WebGL unavailable | Same, plus reveals and smooth scroll |
 | `prefers-reduced-motion` | Everything visible immediately, no canvas, no Lenis |
 | ≤ 2 CPU cores | No canvas; the poster stands in |
@@ -165,10 +152,9 @@ PDF, production domain. Then:
   decisions.** They were drafted from the feature list and are claims about your
   code. An engineer who likes the site will ask about them in an interview.
 - `data/training.json` — replace with the real Workout Buddy export. Same
-  schema. While the placeholder is in place the site deliberately describes the
-  field in structural terms; swapping the file flips the copy to the specific,
-  first-person version automatically (`lib/field-copy.ts`), so nothing untrue
-  ever ships.
+  schema, and no code change needed elsewhere: the canvas only ever draws an
+  abstract scatter, so there is no first-person claim about the data to keep
+  in sync.
 - `public/media/` — drop in `workout-buddy-1..4.png` and, if you have it,
   `workout-buddy-demo.mp4`. The frames already reserve their aspect ratio, so
   adding the real assets cannot shift the layout. No code change.

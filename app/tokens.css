@@ -76,6 +76,23 @@
   --measure: 34rem; /* ~66 characters at body size */
   --gutter: clamp(1.25rem, 0.6rem + 2.9vw, 4.5rem);
   --max-page: 88rem;
+  /* The two-pane split, shared by `.deck` and the masthead row above it so
+     the nav lines up with the content column it sits over. */
+  --deck-split: minmax(0, 6fr) minmax(0, 7fr);
+  /* The floating tab row's own rendered height (pt-[4.5rem] + the row + a
+     `--sp-sm` bottom pad, measured at 125.6-128.5px across 1024-1920px) plus
+     headroom. `.deck-content`'s mask uses this so scrolled panel text is
+     always hidden before it reaches the tabs, regardless of viewport width. */
+  --masthead-h: 8.5rem;
+  /* Width of whatever scrollbar `#deck-scroller` is actually rendering, set by
+     `DeckContext` after mount. Zero here — and with JS off — matches an
+     overlay scrollbar, which is what most readers see and the case the layout
+     is correct for by construction. A space-taking scrollbar (Windows, or
+     macOS with a mouse attached) narrows the text column on its own without
+     narrowing the floating tab row next to it, so the tab row centres on a
+     wider box than the text actually occupies; this token lets the masthead
+     match the same inset. See `.masthead-tabs > div` in globals.css. */
+  --scrollbar-w: 0px;
 
   /* ---- Motion -----------------------------------------------------------
      ONE easing family, slightly overdamped. Nothing on this site bounces. */

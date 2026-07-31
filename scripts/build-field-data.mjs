@@ -9,10 +9,10 @@
  *                     Uint16s: [time, intensity, packed]. The browser parses
  *                     no JSON and computes no positions — it uploads this
  *                     straight into a BufferGeometry.
- *   manifest.json     Counts, ranges, lift names, the per-lift progression
- *                     trend, and the two R2 constants. The shader and the
- *                     poster both read their scatter constants from here, so
- *                     the static fallback and the live canvas cannot drift.
+ *   manifest.json     Counts, ranges, lift names, and the two R2 constants.
+ *                     The shader and the poster both read their scatter
+ *                     constants from here, so the static fallback and the
+ *                     live canvas cannot drift.
  *   poster.svg        The static frame, drawn from the same points with the
  *                     same layout maths. Shown when WebGL is unavailable,
  *                     reduced motion is set, or JavaScript is off.
@@ -121,8 +121,8 @@ sampled.forEach((p, i) => {
 });
 
 // ------------------------------------------------------------------- trend
-// Weekly best e1RM per lift. This is the shape the field resolves into during
-// the case study — the actual progression curve, not a decorative spline.
+// Weekly best e1RM per lift. The actual progression curve, not a decorative
+// spline — drawn into trend.svg for the link-preview image.
 
 const weeks = Math.ceil(span / dayMs / 7);
 const best = data.lifts.map(() => new Array(weeks).fill(0));
@@ -176,7 +176,6 @@ const manifest = {
   },
   sampling: { shipped: sampled.length, of: total, stride: +stride.toFixed(3) },
   lifts: data.lifts.map((l, i) => ({ ...l, index: i })),
-  trend,
 };
 
 // ------------------------------------------------------------------ poster
@@ -231,10 +230,9 @@ const poster = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VB_W} ${V
 `;
 
 // -------------------------------------------------------------- trend.svg
-// The figure's no-WebGL fallback. Same trend arrays the canvas draws, stretched
-// to fill the same box (preserveAspectRatio="none" matches how the shader maps
-// time to width and intensity to height), so the reserved figure is never an
-// empty rectangle.
+// The per-lift progression curve, stretched to fill its box
+// (preserveAspectRatio="none"). Embedded in the link-preview image
+// (app/opengraph-image.tsx) — the canvas itself never draws this.
 
 const TW = 1000;
 const TH = 300;

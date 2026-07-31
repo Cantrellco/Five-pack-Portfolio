@@ -1,12 +1,16 @@
 import { ArchDiagram } from '@/components/ArchDiagram';
 import { Block } from '@/components/Block';
-import { DemoClip, DeviceFrames } from '@/components/DeviceFrames';
+import { DemoClip, PhoneFrameGrid } from '@/components/DeviceFrames';
 import { SectionHeader } from '@/components/SectionHeader';
 import { flagship } from '@/content/projects';
 
+/**
+ * No id and no top rule on the section: the project tab that wraps this owns
+ * the id the hash names, and the tab bar above it already draws the line.
+ */
 export function Flagship() {
   return (
-    <section id="workout-buddy" className="section rule-top" aria-labelledby="workout-buddy-title">
+    <section className="section" aria-labelledby="workout-buddy-title">
       <div className="shell">
         <SectionHeader
           id="workout-buddy-title"
@@ -19,10 +23,15 @@ export function Flagship() {
             </>
           }
         >
-          <p className="mt-[var(--sp-md)]" data-reveal>
+          <p className="mt-[var(--sp-md)] flex flex-wrap items-center gap-[var(--sp-2xs)]" data-reveal>
             <a className="cta" href={flagship.appStoreUrl} rel="noopener">
               Open in the App Store
             </a>
+            {flagship.siteUrl ? (
+              <a className="cta-ghost" href={flagship.siteUrl} rel="noopener">
+                Visit the site
+              </a>
+            ) : null}
           </p>
 
           <div className="body-copy mt-[var(--sp-md)] text-md leading-[1.5]" data-reveal>
@@ -47,7 +56,7 @@ export function Flagship() {
           </dl>
         </Block>
 
-        <Block label="Architecture" wide>
+        <Block label="Architecture">
           <ArchDiagram />
         </Block>
 
@@ -86,8 +95,8 @@ export function Flagship() {
           </div>
         </Block>
 
-        <Block label="Screens" wide>
-          <DeviceFrames />
+        <Block label="Screens">
+          <PhoneFrameGrid shots={flagship.media.screenshots} sizes="(min-width: 768px) 22vw, 44vw" />
           <DemoClip />
         </Block>
       </div>

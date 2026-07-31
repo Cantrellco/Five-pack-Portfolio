@@ -1,24 +1,16 @@
 import type { ReactNode } from 'react';
 
 /**
- * The editorial unit this page is built from: a label side-set in the margin,
- * content in the main column. Left-aligned, asymmetric, never centred.
+ * The editorial unit this page is built from: a kicker naming the block,
+ * content below it. Left-aligned, one column, never centred.
  */
-export function Block({
-  label,
-  wide = false,
-  children,
-}: {
-  label: string;
-  wide?: boolean;
-  children: ReactNode;
-}) {
+export function Block({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid-editorial mt-[var(--sp-xl)]">
-      <p className="label col-aside" data-reveal>
+    <div className="mt-[var(--sp-xl)]">
+      <p className="label kicker" data-reveal>
         {label}
       </p>
-      <div className={wide ? 'col-wide' : 'col-main'}>{children}</div>
+      {children}
     </div>
   );
 }

@@ -4,9 +4,10 @@ import { ImageResponse } from 'next/og';
 import { profile } from '@/content/profile';
 import { fieldStats } from '@/lib/generated/field-stats';
 
-export const alt = `${profile.name} — iOS engineer`;
+export const alt = `${profile.name} — Full-stack engineer & AI developer`;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+export const dynamic = 'force-static';
 
 /**
  * The link preview: what the forwarded URL renders as.
@@ -48,7 +49,7 @@ export default async function OpengraphImage() {
               marginBottom: 26,
             }}
           >
-            Swift · SwiftUI · watchOS
+            {profile.stackTag}
           </div>
           <div style={{ fontFamily: 'Display', fontSize: 132, lineHeight: 0.92, letterSpacing: -3 }}>
             {profile.firstName}

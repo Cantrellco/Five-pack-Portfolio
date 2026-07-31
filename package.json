@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "data": "node scripts/build-field-data.mjs",
     "prebuild": "npm run data",
     "build": "next build",
+    "build:pages": "npm run data && GITHUB_PAGES=true next build && GITHUB_PAGES=true node scripts/rewrite-base-path.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
