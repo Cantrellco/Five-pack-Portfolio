@@ -887,6 +887,23 @@ html::-webkit-scrollbar-thumb:active,
     display: block;
   }
 
+  /* Reserve the control's footprint on the line it can cover.
+     `.mobile-menu` is fixed, so it is out of flow and nothing below it holds
+     any space open — a panel's opening line simply runs underneath, and the
+     button is an opaque paper plate with a hairline border, so the text does
+     not show through, it is cut off. Measured: the About role line was
+     clipped by 19px at 320px, 28px at 344px and 12px at 360px, and cleared
+     from 375px up — which is exactly why the phone e2e block never caught
+     it, being pinned to a 390px viewport.
+     Padded from the control's own box (`2.75rem`, matching
+     `.mobile-menu-button`) plus a gap, so the line wraps early instead of
+     disappearing behind the plate. Only the opening line of each screen
+     needs this; everything below the control's band is already clear. */
+  #about .display-2,
+  #contact .display-1 {
+    padding-right: calc(2.75rem + var(--sp-2xs));
+  }
+
   /* A square, and only the glyph: three hairline bars that fold into a
      close mark when the menu opens. The word "Menu" moved into the
      accessible name (`aria-label` on the summary) — the icon is the whole

@@ -70,8 +70,20 @@ export default function OpengraphImage() {
           }}
         >
           <span>Workout Buddy — iOS &amp; watchOS, on the App Store</span>
+          {/* Gated on the placeholder flag, which is the whole reason that flag
+              exists (see CLAUDE.md: never state a fact about the training data
+              that the data does not support). `data/training.json` currently
+              ships `"placeholder": true` with `"athlete": "Cody Cantrell"`, so
+              the point count is seeded-PRNG output, not a training history —
+              and this is the link preview every share renders, which made it
+              the single most-seen unsupported claim on the site. When real
+              data replaces the placeholder the flag flips and the count comes
+              back on its own; until then the slot states what is actually
+              true of the artwork. */}
           <span>
-            {fieldStats.points.toLocaleString('en-US')} logged reps, drawn
+            {fieldStats.placeholder
+              ? 'Ambient field — one canvas, one draw call'
+              : `${fieldStats.points.toLocaleString('en-US')} logged reps, drawn`}
           </span>
         </div>
       </div>
