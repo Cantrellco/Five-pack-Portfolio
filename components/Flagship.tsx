@@ -16,6 +16,7 @@ export function Flagship() {
           id="workout-buddy-title"
           label="Flagship"
           title={flagship.name}
+          logoId="workout-buddy"
           meta={
             <>
               <span className="block">{flagship.kind}</span>
@@ -34,7 +35,7 @@ export function Flagship() {
             ) : null}
           </p>
 
-          <div className="body-copy mt-[var(--sp-md)] text-md leading-[1.5]" data-reveal>
+          <div className="body-copy mt-[var(--sp-md)]" data-reveal>
             {flagship.what.map((p) => (
               <p key={p}>{p}</p>
             ))}
@@ -64,7 +65,7 @@ export function Flagship() {
           <ol className="border-t border-rule">
             {flagship.decisions.map((d) => (
               <li key={d.id} className="border-b border-rule py-[var(--sp-md)]" data-reveal>
-                <h3 className="display-2">{d.title}</h3>
+                <h3 className="display-3">{d.title}</h3>
                 <p className="body-copy mt-[var(--sp-xs)]">{d.choice}</p>
                 <p className="body-copy mt-[var(--sp-xs)] border-l-2 border-signal pl-[var(--sp-xs)] text-graphite">
                   <span className="label !text-signal mb-[0.35em] block">Tradeoff</span>
@@ -77,7 +78,7 @@ export function Flagship() {
 
         <Block label="Honestly">
           <div data-reveal>
-            <h3 className="display-2">{flagship.hardestProblem.title}</h3>
+            <h3 className="display-3">{flagship.hardestProblem.title}</h3>
             <div className="body-copy mt-[var(--sp-xs)]">
               {flagship.hardestProblem.body.map((p) => (
                 <p key={p}>{p}</p>
@@ -86,7 +87,7 @@ export function Flagship() {
           </div>
 
           <div className="mt-[var(--sp-lg)]" data-reveal>
-            <h3 className="display-2">{flagship.refactor.title}</h3>
+            <h3 className="display-3">{flagship.refactor.title}</h3>
             <div className="body-copy mt-[var(--sp-xs)]">
               {flagship.refactor.body.map((p) => (
                 <p key={p}>{p}</p>

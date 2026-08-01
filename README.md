@@ -104,9 +104,9 @@ How it stays there:
 
 - **Fonts are subset and axis-limited.** Three variable faces, 107KB total.
   Newsreader keeps its `opsz` axis — that is why it is the display face, since
-  the 168px hero gets a design drawn for display sizes rather than a scaled-up
-  text cut — but its weight axis is trimmed to 400–600, which strips the unused
-  deltas out of `gvar` and takes it from 129KB to 55KB.
+  the ~69px section titles get a design drawn for display sizes rather than a
+  scaled-up text cut — but its weight axis is trimmed to 400–600, which strips
+  the unused deltas out of `gvar` and takes it from 129KB to 55KB.
 - **No 3D library.** This began on three.js and react-three-fiber. It drew
   correctly, but cost 230KB over the wire and ~1.4s of script evaluation on a
   throttled mobile profile — Lighthouse 0.69, LCP 3.0s. The field needs one

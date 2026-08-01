@@ -11,7 +11,10 @@ import { useDeck } from './DeckContext';
  * intact — the page is a stack of sections and the masthead links are
  * ordinary anchors. After enhancement the inactive ones take the `hidden`
  * attribute, which removes them from layout AND from the accessibility tree,
- * and the active one becomes a labelled tabpanel.
+ * and the active one becomes a labelled tabpanel — but only from `lg` up,
+ * where a tablist actually exists. Below the breakpoint the section index is
+ * the menu dropdown, whose items are plain buttons; a `role="tabpanel"`
+ * there would announce a tab structure with no tab anywhere in the tree.
  *
  * No `tabIndex` on the panel: every panel here contains focusable content, and
  * the ARIA practice is to make a tabpanel focusable only when it does not.
@@ -25,7 +28,7 @@ export function Panel({
   children: ReactNode;
   className?: string;
 }) {
-  const { enhanced, active } = useDeck();
+  const { enhanced, wide, active } = useDeck();
   const isActive = active === id;
   const label = PANELS.find((p) => p.panel === id)?.label ?? id;
 
@@ -35,7 +38,7 @@ export function Panel({
       data-panel={id}
       className={className}
       hidden={enhanced && !isActive}
-      {...(enhanced ? { role: 'tabpanel' as const, 'aria-label': label } : {})}
+      {...(enhanced && wide ? { role: 'tabpanel' as const, 'aria-label': label } : {})}
     >
       {children}
     </section>

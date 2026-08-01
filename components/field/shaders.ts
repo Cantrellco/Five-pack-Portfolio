@@ -26,6 +26,7 @@ uniform float uPixelRatio;
 uniform float uDensity;    // 1 full, lower on weak hardware
 uniform vec2  uPointer;    // smoothed, 0..1 space
 uniform vec2  uR2;         // low-discrepancy constants, from the manifest
+uniform float uCalm;       // 1 below the two-pane breakpoint: phone profile
 
 varying float vAlpha;
 
@@ -47,23 +48,37 @@ void main() {
 
   // --- drift ----------------------------------------------------------------
   // A slow, cheap flow. Ambient, not tied to scroll -- runs the same whether
-  // the page has moved or not.
-  float t = uTime * 0.055;
+  // the page has moved or not. The calm profile halves both the speed and the
+  // amplitude: on a phone the field is a ground, not a spectacle.
+  float t = uTime * mix(0.055, 0.028, uCalm);
   vec2 flow = vec2(
     sin(p.y * 6.1 + t + index * 0.0007),
     cos(p.x * 5.3 - t * 0.83 + index * 0.0011)
-  ) * 0.011;
+  ) * mix(0.011, 0.006, uCalm);
   p += flow;
 
   // --- pointer --------------------------------------------------------------
   // Weight and inertia, not a snappy repel: the uniform itself is eased on the
-  // CPU, and the falloff here is wide and shallow.
+  // CPU, and the falloff here is wide and shallow. Off entirely in the calm
+  // profile -- on a touch screen the only pointer is the finger that is also
+  // scrolling, and a field that shifts under every scroll reads as noise.
   vec2 pa = vec2(p.x * uAspect, p.y);
   vec2 ma = vec2(uPointer.x * uAspect, uPointer.y);
   vec2 d = pa - ma;
   float dist2 = dot(d, d);
-  float pull = exp(-dist2 * 7.0) * 0.055;
+  float pull = exp(-dist2 * 7.0) * 0.055 * (1.0 - uCalm);
   p += normalize(d + vec2(1e-5)) * pull;
+
+  // --- the wandering lens (calm profile only) -------------------------------
+  // The phone's stand-in for the pointer: a slow lens that roams the canvas
+  // on its own, gently parting the marks as it passes. Two incommensurate
+  // frequencies keep its path from ever visibly repeating; computed from
+  // uTime alone, so it costs no state and no events.
+  vec2 lens = vec2(0.5 + 0.32 * sin(uTime * 0.047), 0.5 + 0.27 * cos(uTime * 0.036));
+  vec2 la = vec2(lens.x * uAspect, lens.y);
+  vec2 dl = pa - la;
+  float lensPull = exp(-dot(dl, dl) * 5.0) * 0.03 * uCalm;
+  p += normalize(dl + vec2(1e-5)) * lensPull;
 
   // --- adaptive thinning ------------------------------------------------------
   // Drop a deterministic slice of the points rather than fading everything,
@@ -76,9 +91,11 @@ void main() {
   gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
 
   // Heavier sets draw slightly bigger and darker; the lift index nudges size so
-  // the eight bands do not read as one uniform texture.
+  // the eight bands do not read as one uniform texture. The calm profile ships
+  // a quarter of the points and takes only a small size bump in return -- the
+  // point of thinning is a quieter field, not the same tone in fewer marks.
   float size = (0.85 + volume * 1.5 + mod(lift, 2.0) * 0.12) * uPixelRatio;
-  gl_PointSize = size * alive;
+  gl_PointSize = size * (1.0 + uCalm * 0.2) * alive;
 
   float ink = 0.15 + volume * 0.2;
   vAlpha = ink * alive;

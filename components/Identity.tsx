@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import { profile } from '@/content/profile';
-import { formatPushDate, type GithubSummary } from '@/lib/github';
 
 /**
  * The solids that drift around the portrait, in DOM order.
@@ -58,14 +57,13 @@ const OBJECTS = [
  * tab does, so it is the only place a single most-important heading can sit
  * without a tab click hiding it.
  *
- * Below `lg` there is no left half to fill. The column becomes an ordinary
- * block with the portrait set small — deliberately so: at full width it was
- * the largest element in the first screen, which made the engraving the thing
- * the browser waited on before the page counted as painted. The objects stay
- * off at that size; there is no room for them without crowding the one thing
- * the pane exists to show.
+ * Below `lg` there is no left half to fill. The column collapses to the fixed
+ * paper strip across the top of the phone layout — the wordmark on one line,
+ * with the tab block hanging in the strip's right corner — and the portrait
+ * and objects stay off entirely: the About and Contact screens stand their
+ * own copy of the engraving on the bottom edge instead (`CornerPlate`).
  */
-export function Identity({ github }: { github: GithubSummary | null }) {
+export function Identity() {
   const { portrait } = profile;
 
   return (
@@ -79,19 +77,19 @@ export function Identity({ github }: { github: GithubSummary | null }) {
             /**
              * These two numbers are load-bearing, not decoration.
              *
-             * `sizes` is what decides which file the browser actually pulls.
-             * Declared at 15rem it resolved to 240px, which at the emulated
-             * mobile pixel ratio asked for 420px and got served the 640-wide
-             * AVIF — 102KB, and a 3.0s LCP against a 2.0s budget. 13rem lands
-             * in the 384-wide bucket instead, at roughly a quarter the bytes,
-             * and the portrait is the largest thing in the first screen so
-             * that saving comes straight off LCP.
-             *
-             * Keep this in step with `.portrait`'s max-width in globals.css.
-             * If that grows past ~13.5rem the browser jumps a bucket and the
-             * budget goes with it.
+             * `sizes` is what decides which file the browser actually pulls,
+             * and — because this image is `priority` — which file gets
+             * preloaded. From `lg` up the figure fills half the viewport and
+             * is the LCP element, so 52vw is real. Below `lg` this figure is
+             * `display: none` (the phone screens paint their own copy via
+             * `CornerPlate`, at 44vw), but next/image floors the srcset of
+             * any vw-bearing `sizes` at its 384-wide candidate — so the 1px
+             * phone entry still preloads the 384w file (~63KB). That is the
+             * measured cost of keeping one server render for both layouts,
+             * inside budget; it cannot go lower without dropping `priority`,
+             * which the desktop LCP needs.
              */
-            sizes="(min-width: 64rem) 52vw, 13rem"
+            sizes="(min-width: 64rem) 52vw, 1px"
             quality={60}
             priority
             className="portrait-img"
@@ -132,24 +130,6 @@ export function Identity({ github }: { github: GithubSummary | null }) {
         <span>{profile.firstName}</span>{' '}
         <span>{profile.lastName}</span>
       </h1>
-
-      {/* The line that actually says who this is. From `lg` up it opens the
-          About panel instead, visible right next to this column in the
-          two-pane layout — duplicating it there would be two voices making
-          the same claim side by side. Below `lg` there is no About panel in
-          view yet, so this is the only place a first-time visitor reads it
-          without scrolling past the portrait, the name, and the tab row
-          first. Same reasoning as About's own copy of this line: no
-          `data-reveal` — this shares the first screen with the name, and a
-          reveal-gated element is what the browser picks as the LCP
-          candidate while it waits on the motion bundle. */}
-      <p className="display-1 max-w-none mt-[var(--sp-sm)] lg:hidden">{profile.roleLine}</p>
-
-      {github?.lastPush ? (
-        <p className="mono mt-[var(--sp-2xs)] text-graphite lg:hidden">
-          last push · {formatPushDate(github.lastPush)}
-        </p>
-      ) : null}
     </div>
   );
 }

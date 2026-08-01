@@ -14,9 +14,13 @@ import { loadField } from './load';
  * field does can cause a render.
  */
 export default function FieldCanvas({
+  calm,
   onReady,
   onLost,
 }: {
+  /** The phone profile — decided by FieldMount, which remounts this
+   *  component (new `key`) when a desktop window crosses the breakpoint. */
+  calm: boolean;
   onReady: () => void;
   onLost: () => void;
 }) {
@@ -35,10 +39,12 @@ export default function FieldCanvas({
     };
     canvas.addEventListener('webglcontextlost', onContextLost);
 
-    loadField(controller.signal)
+    // Below the two-pane breakpoint the field runs calm: a quarter of the
+    // points, and the renderer swaps the pointer tug for its own slow wander.
+    loadField(controller.signal, calm ? 4 : 1)
       .then((data) => {
         if (controller.signal.aborted) return;
-        renderer = createFieldRenderer(canvas, data);
+        renderer = createFieldRenderer(canvas, data, calm);
         onReady();
       })
       .catch((error: unknown) => {
@@ -52,8 +58,12 @@ export default function FieldCanvas({
       controller.abort();
       canvas.removeEventListener('webglcontextlost', onContextLost);
       renderer?.destroy();
+      // A breakpoint crossing remounts this component; the poster covers the
+      // gap while the replacement loads, exactly as it does for a lost
+      // context. On final unmount the extra call is a no-op.
+      onLost();
     };
-  }, [onReady, onLost]);
+  }, [calm, onReady, onLost]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />;
 }

@@ -163,7 +163,7 @@ function SkillOrb({ skill, index }: { skill: Skill; index: number }) {
       <span className="skill-orb-circle">
         <SkillGlyph id={skill.id} />
       </span>
-      <span className="skill-orb-name mono">{skill.name}</span>
+      <span className="skill-orb-name">{skill.name}</span>
     </li>
   );
 }

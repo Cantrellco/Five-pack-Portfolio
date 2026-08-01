@@ -73,7 +73,18 @@ function readInk(): [number, number, number] {
 
 export type FieldRenderer = { destroy: () => void };
 
-export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData): FieldRenderer {
+/**
+ * `calm` is the phone profile: the pointer tug is off (a finger that tugs the
+ * field is also the finger scrolling the page), and in its place a slow lens
+ * wanders the canvas on its own — same parting-of-marks read, no touch
+ * required. The marks take a small size bump against the thinner buffer, and
+ * the DPR cap drops a step.
+ */
+export function createFieldRenderer(
+  canvas: HTMLCanvasElement,
+  data: FieldData,
+  calm = false,
+): FieldRenderer {
   const gl = (canvas.getContext('webgl2', {
     alpha: true,
     antialias: false,
@@ -105,7 +116,10 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
     uPointer: gl.getUniformLocation(pointsProgram, 'uPointer'),
     uR2: gl.getUniformLocation(pointsProgram, 'uR2'),
     uInk: gl.getUniformLocation(pointsProgram, 'uInk'),
+    uCalm: gl.getUniformLocation(pointsProgram, 'uCalm'),
   };
+
+  const maxDpr = calm ? 1.5 : MAX_DPR;
 
   const ink = readInk();
 
@@ -130,7 +144,7 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
   let sampleFrames = 0;
 
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     const w = Math.round(canvas.clientWidth * dpr);
     const h = Math.round(canvas.clientHeight * dpr);
     if (w === canvas.width && h === canvas.height) return;
@@ -162,7 +176,7 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
     pointerX = approach(pointerX, (fieldState.pointerX + 1) / 2, 1.7, dt);
     pointerY = approach(pointerY, (fieldState.pointerY + 1) / 2, 1.7, dt);
 
-    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     const aspect = width / Math.max(1, height);
 
     gl!.clear(gl!.COLOR_BUFFER_BIT);
@@ -176,6 +190,7 @@ export function createFieldRenderer(canvas: HTMLCanvasElement, data: FieldData):
     gl!.uniform2f(fieldLoc.uPointer, pointerX, pointerY);
     gl!.uniform2f(fieldLoc.uR2, data.r2[0], data.r2[1]);
     gl!.uniform3f(fieldLoc.uInk, ink[0], ink[1], ink[2]);
+    gl!.uniform1f(fieldLoc.uCalm, calm ? 1 : 0);
 
     gl!.bindBuffer(gl!.ARRAY_BUFFER, pointsPos);
     gl!.enableVertexAttribArray(fieldLoc.position);

@@ -3,9 +3,9 @@
    Regenerate with `npm run fonts` (see scripts/subset-fonts.py).
 
    Newsreader keeps its `opsz` axis, so `font-optical-sizing: auto` (the CSS
-   default) hands the 168px hero a design actually drawn for display sizes —
-   finer hairlines, tighter fit — rather than a scaled-up text cut. That axis
-   is the reason it is the display face.
+   default) hands the ~69px section titles (`--fs-4xl`) a design actually
+   drawn for display sizes — finer hairlines, tighter fit — rather than a
+   scaled-up text cut. That axis is the reason it is the display face.
 --------------------------------------------------------------------------- */
 
 @font-face {

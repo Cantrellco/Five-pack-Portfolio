@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
 
 // The renderer lives behind this boundary. Nothing here is requested until
@@ -37,9 +37,26 @@ function canRunCanvas(): boolean {
  * once its data has arrived — there is never a blank rectangle, and if the
  * WebGL context is later lost the poster simply comes back.
  */
+/* The calm (phone) profile cuts the point buffer at load time, so it cannot
+   be adjusted on a live renderer — crossing 64rem remounts the canvas via
+   `key` instead, which re-fetches (from cache) and rebuilds at the right
+   density. Phones never fire the change event; it exists for desktop windows
+   dragged across the breakpoint, which would otherwise keep the wrong field
+   for the rest of the session. An external store rather than state set from
+   an effect — same reasoning as DeckContext's `enhanced`. */
+const CALM_QUERY = '(max-width: 63.999rem)';
+const subscribeCalm = (onChange: () => void) => {
+  const mq = window.matchMedia(CALM_QUERY);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+};
+const calmNow = () => window.matchMedia(CALM_QUERY).matches;
+const calmOnServer = () => false;
+
 export function FieldMount() {
   const [enabled, setEnabled] = useState(false);
   const [live, setLive] = useState(false);
+  const calm = useSyncExternalStore(subscribeCalm, calmNow, calmOnServer);
 
   useEffect(() => {
     if (!canRunCanvas()) return;
@@ -85,7 +102,9 @@ export function FieldMount() {
         height={1000}
         decoding="async"
       />
-      {enabled ? <FieldCanvas onReady={onReady} onLost={onLost} /> : null}
+      {enabled ? (
+        <FieldCanvas key={calm ? 'calm' : 'full'} calm={calm} onReady={onReady} onLost={onLost} />
+      ) : null}
     </div>
   );
 }

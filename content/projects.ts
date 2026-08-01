@@ -197,7 +197,7 @@ export const harvest = {
   id: 'the-harvest',
   name: 'The Harvest',
   kind: 'iOS · SwiftUI',
-  tagline: 'A Bible app centred on Jesus.',
+  tagline: 'A Bible app centered on Jesus.',
   repoUrl: 'https://github.com/Cantrellco/the-harvest',
   // TODO(owner): add the App Store URL once it ships. Blank hides the link.
   appStoreUrl: '',
@@ -273,7 +273,7 @@ export const sites = [
     id: 'little-town',
     name: 'Little Town',
     kind: 'Client · Web',
-    summary: 'A play-town for small children in Fairfield, Illinois — memberships, parties and open play.',
+    summary: 'A play-town site for small children in Fairfield, Illinois.',
     url: 'https://cantrellco.github.io/Little-Town/',
     repoUrl: 'https://github.com/Cantrellco/Little-Town',
     lines: [
@@ -292,7 +292,7 @@ export const sites = [
     id: 'fusion-coffee',
     name: 'Fusion Coffee',
     kind: 'Client · Web',
-    summary: 'Marketing site for a specialty coffee shop in downtown Fairfield, Illinois.',
+    summary: 'Coffee shop site for a coffee shop in downtown Fairfield, Illinois.',
     url: 'https://cantrellco.github.io/Fusion-Coffee/',
     repoUrl: 'https://github.com/Cantrellco/Fusion-Coffee',
     lines: [
@@ -312,7 +312,7 @@ export const sites = [
     id: 'pc-pro',
     name: 'PC Pro Inspections',
     kind: 'Client · Web',
-    summary: 'Marketing site for a residential home inspection business in Southern Illinois.',
+    summary: 'Marketing site for a local home inspector.',
     url: 'https://pcproinspections.com',
     repoUrl: 'https://github.com/Cantrellco/PC-Pro-Inspections',
     // Deliberately names no submit mechanism and no specific config file: an
@@ -334,7 +334,7 @@ export const sites = [
     id: 'faith-outreach',
     name: 'Faith Outreach',
     kind: 'Client · Web',
-    summary: 'A church website redesign in Terre Haute, Indiana — redesigned in place, on the platform the staff already knew.',
+    summary: 'A church website redesign in Terre Haute, Indiana.',
     url: 'https://fochurch.org',
     /** The planning repo is private, so there is nothing a visitor could open. */
     repoUrl: '',

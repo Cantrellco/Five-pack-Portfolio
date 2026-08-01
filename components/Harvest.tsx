@@ -20,6 +20,7 @@ export function Harvest() {
         id="the-harvest-title"
         label="Native app"
         title={harvest.name}
+        logoId={harvest.id}
         meta={
           <>
             <span className="block">{harvest.kind}</span>
@@ -27,7 +28,7 @@ export function Harvest() {
           </>
         }
       >
-        <p className="body-copy mt-[var(--sp-md)] text-md leading-[1.5]" data-reveal>
+        <p className="body-copy mt-[var(--sp-md)]" data-reveal>
           {harvest.what}
         </p>
 

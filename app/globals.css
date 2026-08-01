@@ -25,9 +25,7 @@
   --text-lg: var(--fs-lg);
   --text-xl: var(--fs-xl);
   --text-2xl: var(--fs-2xl);
-  --text-3xl: var(--fs-3xl);
   --text-4xl: var(--fs-4xl);
-  --text-5xl: var(--fs-5xl);
 
   --ease-site: var(--motion-ease);
 }
@@ -78,16 +76,53 @@ body {
   scroll-margin-top: calc(var(--sp-xl) + 2.5rem);
 }
 
+/* One scrollbar treatment, everywhere something scrolls on its own: the
+   document below `lg`, the deck's own right-hand pane at `lg` and up, and a
+   dialog's case study. `scrollbar-color` covers Firefox; Chromium and Safari
+   need the track styled explicitly too, not just the thumb — left alone, the
+   track paints as an opaque white plate the instant it's pressed, on top of
+   whichever of these three is showing paper underneath it. */
+html,
+.deck-content,
+.work-dialog:modal .work-dialog-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--graphite) transparent;
+}
+
+html::-webkit-scrollbar,
+.deck-content::-webkit-scrollbar,
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+html::-webkit-scrollbar-track,
+.deck-content::-webkit-scrollbar-track,
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* `border-radius` on a webkit scrollbar thumb is one of the few places this
+   site rounds anything — Firefox's `scrollbar-color` above has no equivalent
+   knob and stays square, a platform gap rather than an inconsistency to
+   chase. */
+html::-webkit-scrollbar-thumb,
+.deck-content::-webkit-scrollbar-thumb,
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb {
+  background-color: var(--graphite);
+  border-radius: 999px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+.deck-content::-webkit-scrollbar-thumb:hover,
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:active,
+.deck-content::-webkit-scrollbar-thumb:active,
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb:active {
+  background-color: color-mix(in srgb, var(--graphite) 55%, var(--ink) 45%);
+}
+
 /* --------------------------------------------------------------- typography
 -------------------------------------------------------------------------- */
-
-.display-hero {
-  font-family: var(--ff-display);
-  font-size: var(--fs-hero);
-  font-weight: 400;
-  line-height: var(--lh-display);
-  letter-spacing: var(--ls-display);
-}
 
 .display-1 {
   font-family: var(--ff-display);
@@ -97,27 +132,82 @@ body {
   letter-spacing: var(--ls-display);
 }
 
-.display-2 {
-  font-family: var(--ff-display);
-  font-size: var(--fs-2xl);
-  font-weight: 400;
-  line-height: var(--lh-tight);
-  letter-spacing: -0.016em;
+/* The case-study title, with its project's real logo after it — only
+   `SectionHeader` calls that resolve a `logoId` to an actual file render
+   this row; every other heading (About, Resume, Contact) keeps the plain
+   `.display-1` text node it always had. */
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
 }
 
+/* Sized by height alone, with width left to follow the file's own aspect
+   ratio — never a `max-width` alongside it. A replaced element with a fixed
+   height AND a capped width does not letterbox, it distorts: `object-fit`
+   can only fit content to a box both of whose axes are known, and here one
+   is deliberately `auto`. The per-mark `--logo-scale` (see `LOGO_SCALE` in
+   lib/media.ts) is what keeps a wide mark from outrunning its title, and it
+   does so by shrinking the whole mark rather than squashing one axis.
+   0.62em is the base: a little under the display face's cap height, so a
+   solid mark sits inside the line the capitals draw rather than above it. */
+.section-title-logo {
+  height: calc(0.62em * var(--logo-scale, 1));
+  width: auto;
+  flex-shrink: 0;
+  /* `align-items: center` centres this on the LINE BOX, which is not where
+     the capitals are. `--lh-display` (0.92) is tighter than the face's own
+     content box (ascent 0.728 + descent 0.262 = 0.99em), and the descent is
+     space the capitals in a title never use — so the capital band sits high
+     in that box and a centred mark hangs visibly below it. Measured at 8.5px
+     of drop on a 68.7px title, and it is the same in every dialog because
+     every mark is shorter than the line box:
+       (ascent 0.728 - descent 0.262 - cap height 0.712) / 2 = -0.123em
+     A transform rather than a margin: this must not change the line's
+     height, only where the mark is painted within it. */
+  transform: translateY(-0.123em);
+}
+
+/* App icons only, where the filled square IS the mark — iOS never draws one
+   unmasked, so a hard square reads as an unfinished asset. Deliberately not
+   applied to all six: the other four are transparent at the corners but
+   their artwork still runs into them, and rounding clipped real ink off
+   Little Town's ground shadow and PC Pro's shield. See `LOGO` in
+   lib/media.ts, which is what flags a file as a tile. */
+.section-title-logo[data-tile] {
+  border-radius: 18%;
+}
+
+.display-2 {
+  font-family: var(--ff-display);
+  font-size: var(--fs-xl);
+  font-weight: 400;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.014em;
+}
+
+/* The item-level heading: a feature name, a resume org, a decision title,
+   a stat number — anything that titles one row in a run of rows. A full
+   step below `.display-2` and one weight up: small enough to read as an
+   item among items rather than a headline, weighted enough to hold the
+   line against the body copy under it. If a row-title ever reaches for
+   `.display-2`, the list it sits in will read as a page of headlines. */
 .display-3 {
   font-family: var(--ff-display);
   font-size: var(--fs-lg);
   font-weight: 500;
   line-height: var(--lh-tight);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.006em;
 }
 
+/* A step above body, not body-sized: the lede's whole job is to read as the
+   sentence the section stands on, and it can only do that from a size body
+   copy does not share. */
 .lede {
   font-size: var(--fs-md);
   line-height: 1.5;
   letter-spacing: -0.011em;
-  max-width: 30ch;
+  max-width: 44ch;
   text-wrap: pretty;
 }
 
@@ -130,18 +220,24 @@ body {
   margin-top: 1em;
 }
 
-/* Mono is the utility voice: labels, data, technical annotation. Martian Mono
-   runs wide, so it is always set small with open tracking. */
+/* The eyebrow voice: quiet sans caps, not mono. Two dozen of these open
+   blocks all over the page, and set in wide mono they were the loudest thing
+   on it — a page whose most repeated element is its utility voice reads as a
+   terminal, not an editorial. Sans caps at this size recede into structure;
+   mono (below) is reserved for what it is actually for: data. */
 .label {
-  font-family: var(--ff-mono);
+  font-family: var(--ff-body);
   font-size: var(--fs-2xs);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.3;
   letter-spacing: var(--ls-label);
   text-transform: uppercase;
   color: var(--graphite);
 }
 
+/* Mono is the data voice — dates, counts, file names, technical annotation —
+   and nothing else. Martian Mono runs wide, so it is always set small with
+   open tracking. */
 .mono {
   font-family: var(--ff-mono);
   font-size: var(--fs-2xs);
@@ -263,13 +359,31 @@ body {
        The field sits behind `.deck-content` regardless (`.page` is stacked
        above `.field-layer`), so masking this element to nothing here reveals
        the field instead of covering it. Static, so it costs nothing to scroll
-       and needs no JS to stay in sync with scroll position. */
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent var(--masthead-h),
-      black var(--masthead-h)
-    );
-    mask-image: linear-gradient(to bottom, transparent var(--masthead-h), black var(--masthead-h));
+       and needs no JS to stay in sync with scroll position.
+
+       This has to live on `.deck-content` itself, the actual `overflow-y:
+       auto` element, and not on a non-scrolling child of it: a mask is
+       painted in the element's OWN local box, which for the scroll container
+       stays put as content moves inside it — exactly the "always hide the
+       top of whatever's currently visible" behaviour this wants. Moved onto
+       a plain child instead, the mask sits at a fixed point in the CONTENT's
+       coordinates instead, and scrolls away with the rest of the top of the
+       page the moment the reader scrolls past it, leaving nothing masked
+       under the tab row at all past the first screenful.
+
+       The cost of keeping it here is that a `mask-image` masks the whole
+       element it's on, native scrollbar included — the second layer below
+       is what keeps that from also erasing the top of the scrollbar's own
+       track and thumb: it stays fully opaque for the rightmost strip the
+       scrollbar actually occupies, the whole height of the element, and
+       every mask layer paints over the ones under it, so that strip wins
+       regardless of what the first layer says about it. */
+    -webkit-mask-image:
+      linear-gradient(to right, transparent calc(100% - 16px), black calc(100% - 16px)),
+      linear-gradient(to bottom, transparent var(--masthead-h), black var(--masthead-h));
+    mask-image:
+      linear-gradient(to right, transparent calc(100% - 16px), black calc(100% - 16px)),
+      linear-gradient(to bottom, transparent var(--masthead-h), black var(--masthead-h));
   }
 
   /* The tablist, positioned off `<header>`'s flow entirely rather than sat
@@ -750,44 +864,176 @@ body {
    rule underneath for everyone else. Colour alone never carries it.
 -------------------------------------------------------------------------- */
 
-/* The column's own tablist, for the widths where the masthead has no room for
-   one. The breakpoint lives here rather than as a `lg:hidden` utility because
+/* The phone's section index: one dropdown hanging in the top-right corner.
+   The breakpoint lives here rather than as a `lg:hidden` utility because
    this rule is loaded after Tailwind and would otherwise win the cascade
    against it — two single-class selectors, last one wins. */
-.deck-tabs {
+.mobile-menu {
   display: none;
 }
 
 @media (max-width: 63.999rem) {
-  .deck-tabs {
+  /* Fixed to the viewport, not sticky in a column: below `lg` the window is
+     what scrolls, and this control belongs to the screen, not to any panel's
+     content. Both the button and the open list carry their own solid paper
+     fill — panel text scrolls directly underneath, and wherever content can
+     pass behind chrome it is one plane of colour, never a blend (see
+     `.work-dialog::backdrop`'s note). */
+  .mobile-menu {
+    position: fixed;
+    top: var(--sp-xs);
+    right: var(--gutter);
+    z-index: 41;
+    display: block;
+  }
+
+  /* A square, and only the glyph: three hairline bars that fold into a
+     close mark when the menu opens. The word "Menu" moved into the
+     accessible name (`aria-label` on the summary) — the icon is the whole
+     visual control. */
+  .mobile-menu-button {
+    /* `list-style: none` plus the -webkit rule below is what removes the
+       disclosure triangle everywhere. */
+    list-style: none;
     display: flex;
-    gap: var(--sp-md);
-    overflow-x: auto;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: var(--sp-xs);
-    margin-bottom: var(--sp-lg);
-    /* The row scrolls itself rather than widening the document. */
-    scrollbar-width: none;
-    /* Below `lg` this is the only section nav on the page, and without this it
-       scrolls away with the first panel's content like any other paragraph --
-       a native app's tab bar holds its position instead. Sticks to the
-       viewport rather than to `#deck-scroller` because that element has no
-       scroll overflow of its own at this width; the window is what scrolls.
-       A solid paper fill is required, not optional: panel text passes
-       directly underneath this once it sticks, and the site's own rule is
-       one plane of colour, never a blend, wherever content can pass behind
-       another element (see `.work-dialog::backdrop`'s note). */
-    position: sticky;
-    top: 0;
-    z-index: 30;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--ink);
     background-color: var(--paper);
-    padding-top: var(--sp-xs);
-    margin-top: calc(var(--sp-xs) * -1);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .mobile-menu-button::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-menu-icon {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  /* Bars are 2px of `currentColor`, so they follow the ink token and would
+     follow a hover colour if the button ever took one. Transform-only
+     motion, on the shared easing — the top and bottom bars pivot into an X
+     while the middle one folds away. */
+  .mobile-menu-icon span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background-color: currentColor;
+    transition:
+      transform var(--motion-fast) var(--motion-ease),
+      opacity var(--motion-fast) var(--motion-ease);
+  }
+
+  .mobile-menu[open] .mobile-menu-icon span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .mobile-menu[open] .mobile-menu-icon span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+
+  .mobile-menu[open] .mobile-menu-icon span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  .mobile-menu-list {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    min-width: 11rem;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+  }
+
+  /* The list drops in as one plane and the items settle a beat behind it —
+     opacity and transform only, and the global reduced-motion rule zeroes
+     both animations. `backwards` holds each item at its first keyframe
+     through its delay, so nothing flashes fully-inked before its turn.
+     Gated on `.js` like every reveal: motion is enhancement, and with
+     scripting off the menu simply appears whole — an item held transparent
+     through its delay is briefly an invisible control, which enhancement
+     may do and the baseline may not. */
+  .js .mobile-menu[open] .mobile-menu-list {
+    animation: mobile-menu-drop var(--motion-fast) var(--motion-ease) backwards;
+  }
+
+  .js .mobile-menu[open] .mobile-menu-item {
+    animation: mobile-menu-item var(--motion-base) var(--motion-ease) backwards;
+  }
+
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(1) {
+    animation-delay: 40ms;
+  }
+
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(2) {
+    animation-delay: 80ms;
+  }
+
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(3) {
+    animation-delay: 120ms;
+  }
+
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(4) {
+    animation-delay: 160ms;
+  }
+
+  .mobile-menu-item {
+    appearance: none;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 0.8em 1em;
+    font-family: var(--ff-body);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    text-align: right;
+    color: var(--graphite);
+    cursor: pointer;
+  }
+
+  .mobile-menu-item:last-child {
+    border-bottom: 0;
+  }
+
+  /* The open section is named by the signal hairline on the item's right
+     edge — an inset shadow rather than a border, so nothing shifts. Colour
+     alone never carries it: enhanced items also carry `aria-current`. */
+  .mobile-menu-item[aria-current='true'] {
+    color: var(--ink);
+    box-shadow: inset -2px 0 0 var(--signal);
   }
 }
 
-.deck-tabs::-webkit-scrollbar {
-  display: none;
+@keyframes mobile-menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobile-menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-0.3rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tab {
@@ -798,7 +1044,9 @@ body {
   border: 0;
   padding: 0.2em 0;
   font-family: var(--ff-body);
-  font-size: calc(var(--fs-sm) * 1.05 * 1.1);
+  /* One step under body: this row is wayfinding, not content, and at body
+     size it competed with the copy it navigates. */
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--graphite);
   white-space: nowrap;
@@ -1376,7 +1624,12 @@ body {
   height: 1.5rem;
 }
 
+/* Sans, not mono: a skill's name is a caption, not data. The size lives here
+   rather than as a utility class in Skills.tsx so the orb owns its own type
+   the way every other component pattern in this file does. */
 .skill-orb-name {
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.01em;
   color: var(--graphite);
   text-align: center;
   line-height: var(--lh-tight);
@@ -1775,6 +2028,376 @@ body {
 
 .skip-link:focus-visible {
   transform: translateY(0.5rem);
+}
+
+/* -------------------------------------------------------- mobile app layout
+   Below `lg` the site stops being a shrunken two-pane document and becomes a
+   set of app screens. One piece of chrome persists on every one of them: the
+   menu dropdown in the top-right corner (see `.mobile-menu`); everything
+   else belongs to the panel that owns it.
+
+   About and Contact are viewport-fit screens — intro in the top-left, the
+   figure standing on the bottom-left edge, the profile marks stacked in the
+   bottom-right — sized to `100svh` so that when one of them is the open
+   panel there is nothing to scroll. Resume and Work keep the window scroll;
+   a list and a grid have real length. Nothing in this section touches the
+   two-pane layout: every rule is gated to the same breakpoint the deck's own
+   single-column fallback already uses.
+-------------------------------------------------------------------------- */
+
+/* The face-and-marks row exists only on the phone screens; About and Contact
+   render it unconditionally and this hides it everywhere else. */
+.corner-plate {
+  display: none;
+}
+
+/* The mark itself: a `currentColor` fill shown through the logo's alpha, so
+   the PNG contributes shape and nothing else. Painting it as a background
+   colour rather than an `<img>` is what keeps the three marks inside the
+   token system — they inherit `--graphite` from `.corner-link` and follow it
+   to `--signal` on hover, which an `<img>` could not do. `contain` and the
+   square source keep every mark on one optical size; the box is sized per
+   breakpoint below. Both the prefixed and standard properties are set:
+   WebKit still needs `-webkit-mask` for the shorthand. */
+.corner-mark {
+  display: block;
+  /* `--mark-size` is the shared box set per breakpoint; `--mark-scale` is the
+     per-mark optical correction the component supplies (see `MARK_SCALE` in
+     `CornerPlate.tsx`). Splitting them keeps one size to tune per breakpoint
+     while a mark that reads small can still be nudged on its own. */
+  width: calc(var(--mark-size) * var(--mark-scale, 1));
+  height: calc(var(--mark-size) * var(--mark-scale, 1));
+  background-color: currentColor;
+  -webkit-mask: var(--mark) center / contain no-repeat;
+  mask: var(--mark) center / contain no-repeat;
+}
+
+/* Unconditional, not folded into the mobile block below: `next/image`'s
+   `fill` prop reads this element's computed position on mount regardless of
+   viewport or of `display: none` up the tree, and warns if it isn't one of
+   absolute/fixed/relative. `.corner-face` renders at every breakpoint (About
+   and Contact mount it unconditionally), so the box it sizes for itself
+   below stays scoped to the phone screens, but the position it needs to not
+   warn does not. */
+.corner-face {
+  position: relative;
+}
+
+/* About only, `lg` up: the phone screen's mark row echoed in the panel's
+   bottom-right corner. Just the marks — the face stays hidden, since the
+   identity column already carries a full-height copy of the portrait next
+   to this panel. `display: contents` on the plate itself rather than
+   restyling it: the only thing that should paint here is `.corner-links`,
+   so the wrapper needs no box of its own. */
+@media (min-width: 64rem) {
+  #about .corner-plate {
+    display: contents;
+  }
+
+  /* The marks hang off the TEXT BLOCK, not off the section. `.section` was
+     the containing block before, by way of the base `.section` rule, and it
+     is the wrong reference: its box is the panel's padding box, so aligning
+     to it put the stack a gutter inside the right edge and a stray 30px
+     below the last line of the bio, level with nothing. `.shell` is the
+     column the copy actually occupies, so anchoring to it lets `right: 0`
+     and `bottom: 0` mean "flush with the text's outer edge" and "level with
+     the text's last line" — and both stay true as the copy reflows, with no
+     measured offsets to go stale. */
+  #about .shell {
+    position: relative;
+  }
+
+  /* The figure wrapper, not just the face: it now carries the name caption
+     too, and neither belongs on desktop — the identity column already
+     stands the full portrait and the `<h1>` next to this panel. */
+  #about .corner-figure {
+    display: none;
+  }
+
+  /* A column, not a row: stacked, the three marks read as one short list
+     hanging off the panel's lower right rather than racing the copy
+     horizontally. Both offsets are 0 against `.shell` on purpose — see the
+     note on that rule; they are alignments, not chosen distances. */
+  #about .corner-links {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3xs);
+  }
+
+  /* `--graphite`, not `--ink`. These are accessories to the panel, not part
+     of its argument, and open line art at full ink weight competes with the
+     body copy for the same attention. Graphite measures 4.73:1 on paper —
+     past the 3:1 floor a non-text graphic needs, and past text AA too. */
+  /* Sized off the LARGEST mark, not the shared `--mark-size`: the mascot's
+     optical correction takes it to 3.64rem, and a box smaller than that would
+     let it spill into its neighbours' gaps and shrink its own hit target. */
+  #about .corner-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.9rem;
+    height: 3.9rem;
+    color: var(--graphite);
+    transition: color var(--motion-fast) var(--motion-ease);
+  }
+
+  #about .corner-link:hover,
+  #about .corner-link:focus-visible {
+    color: var(--signal);
+  }
+
+  /* One size for all three, and no per-mark correction: each PNG is trimmed
+     to its own ink and letterboxed into the same square, so they already
+     share an optical size.
+
+     Sized up from the 1.9rem this started at, and the reason is the mascot
+     rather than taste: it is a whole character carrying a face and the plate
+     text, where the other two are single glyphs, so it is the mark that sets
+     the floor for how small this set can go before it reads as texture. The
+     two glyphs simply come along. */
+  #about .corner-mark {
+    --mark-size: 2.8rem;
+  }
+}
+
+@media (max-width: 63.999rem) {
+  /* Nothing fixed spans the top any more, but anchor jumps and keyboard
+     focus still want a breath of air above them. scroll-padding covers
+     everything the browser ever scrolls into view — a Tab-focused link
+     included, which `scroll-margin-top` on `[id]` alone would miss. */
+  html {
+    scroll-padding-top: var(--sp-xs);
+  }
+
+  /* The global `[id]` scroll-margin is sized to clear the desktop masthead.
+     There is no fixed chrome to clear on the phone, so without this override
+     every no-JS anchor jump lands ~100px short of the section it names. */
+  [id] {
+    scroll-margin-top: var(--sp-xs);
+  }
+
+  /* The deck's own vertical padding belonged to the scrolling-document
+     layout. The screens size themselves now. */
+  .deck {
+    padding-block: 0;
+    gap: 0;
+  }
+
+  /* There is no header strip on the phone at all — the menu dropdown is the
+     only chrome. The identity column collapses to its accessible remainder:
+     the `<h1>` has to stay in the tree (it is the page's one top-level
+     heading), so the column takes the screen-reader-only clip pattern
+     rather than `display: none`, which would remove the name from the
+     accessibility tree along with the layout. */
+  .deck-identity {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* The engraving leaves the phone layout; the two screens that want the
+     face (About, Contact) carry their own copy in `.corner-face`, standing
+     on the bottom edge where the layout actually has floor for it. */
+  .deck-identity .portrait {
+    display: none;
+  }
+
+  .deck-content .section {
+    padding-block: var(--sp-lg) var(--sp-xl);
+  }
+
+  /* The Work panel has no `.section` wrapper of its own — the grid and the
+     orb row sit directly in it. */
+  #work {
+    padding-block: var(--sp-lg) var(--sp-xl);
+  }
+
+  /* ---- the two viewport-fit screens ------------------------------------ */
+
+  /* `min-height`, not `height` with a clip: on current-generation phones
+     (~360x640 and up, measured) the content fits and the screen is exactly
+     one viewport with nothing to scroll. On shorter viewports — an original
+     SE, a landscape phone — the same screen runs a few lines past the fold
+     and the page scrolls those lines rather than clipping copy off the
+     bottom. That trade is deliberate: a hard `height` plus overflow clipping
+     would make the shortfall unreadable instead of merely scrollable. */
+  #about .section,
+  #contact .section {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding-block: var(--sp-md) 0;
+  }
+
+  #about .shell,
+  #contact .shell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Contact's display type, one step down per element: the headline and the
+     email address are both sized for a half-viewport pane, and at those sizes
+     the two of them alone would spend most of a phone screen. */
+  #contact .display-1 {
+    font-size: var(--fs-xl);
+  }
+
+  #contact .display-2 {
+    font-size: var(--fs-md);
+  }
+
+  /* ---- the bottom corners ---------------------------------------------- */
+
+  .corner-plate {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-md);
+    /* `auto` is what pins the row to the foot of the screen's flex column —
+       the intro holds the top, this holds the floor. */
+    margin-top: auto;
+    padding-top: var(--sp-md);
+  }
+
+  /* The engraving with the name captioned directly under it. The wrapper is
+     the flex child; the face is pulled in a step from the 44vw it ran at
+     alone, which is what lifts the head enough to make room for the caption
+     without the pair outgrowing the corner. */
+  .corner-figure {
+    flex: none;
+    width: min(40vw, 11rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* The caption sits on the screen's bottom edge — this is what keeps its
+       descenders off the actual glass. */
+    padding-bottom: var(--sp-2xs);
+  }
+
+  /* Same engraving, same contract as the desktop pane: `contain`, standing
+     on the bottom edge, the field showing through the alpha. The box takes
+     the file's own ratio, so nothing is cropped and nothing letterboxes. */
+  .corner-face {
+    width: 100%;
+    aspect-ratio: 1000 / 1450;
+    margin: 0;
+  }
+
+  .corner-face-img {
+    object-fit: contain;
+    object-position: 50% 100%;
+  }
+
+  /* The identity wordmark's phone voice, standing in as the caption: mono,
+     small, tracked like a label — data-adjacent, not display type. */
+  .corner-name {
+    margin-top: var(--sp-2xs);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    line-height: 1;
+    letter-spacing: calc(var(--ls-label) + 0.04em);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .corner-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-xs);
+    padding-bottom: var(--sp-sm);
+  }
+
+  /* Same "size off the largest mark" rule as the `#about` copy above: the
+     mascot reaches 4.06rem here once its correction is applied. */
+  .corner-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.3rem;
+    height: 4.3rem;
+    color: var(--graphite);
+    transition: color var(--motion-fast) var(--motion-ease);
+  }
+
+  .corner-link:hover,
+  .corner-link:focus-visible {
+    color: var(--signal);
+  }
+
+  /* One size for all three — see the `#about` copy above. A touch larger than
+     the desktop copy: the touch box is bigger here, and open line art needs
+     to fill it. */
+  .corner-mark {
+    --mark-size: 3.1rem;
+  }
+
+  /* ---- the Work screen -------------------------------------------------- */
+
+  /* Two columns, always — `auto-fill` at a 15rem floor collapses to one long
+     single-file column on every phone, which reads as a list, not a grid.
+     `auto-rows: 1fr` makes every row the height of the tallest tile, so six
+     names of uneven length still land on six identical boxes. */
+  .work-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: var(--sp-sm);
+  }
+
+  .work-tile {
+    padding: var(--sp-sm);
+  }
+
+  /* Name and kind carry the tile on a phone. The summaries are the one
+     thing that made the boxes ragged, and at two columns of ~150px they
+     were clamped to near-uselessness anyway — the case study behind the
+     tile is one tap away. */
+  .work-tile-summary {
+    display: none;
+  }
+
+  /* ---- a project as a whole page ---------------------------------------- */
+
+  /* The dialog stops being a card floating over the grid and takes the whole
+     viewport: an opened project IS the page until it is closed. Same element,
+     same state machine, same close/Escape/Back paths — only the box changes.
+     `:modal` only, so the no-JS fallback (every project simply `open`, in
+     flow) keeps its in-document card styling. */
+  .work-dialog:modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+  }
+
+  .work-dialog:modal .work-dialog-body {
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: var(--sp-xl) var(--gutter) var(--sp-2xl);
+  }
+
+  /* On a full-page case study the close control sits over whatever scrolls
+     past it, so it gets the same treatment as every other piece of floating
+     chrome: a solid paper plate, framed, never a blend. */
+  .work-dialog:modal .work-dialog-close {
+    top: var(--sp-sm);
+    right: var(--gutter);
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--paper);
+    border: 1px solid var(--rule);
+  }
 }
 
 /* -------------------------------------------------------------- reveal base

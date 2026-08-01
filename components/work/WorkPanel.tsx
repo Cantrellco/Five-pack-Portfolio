@@ -174,18 +174,17 @@ function DustMotes({ isOpen }: { isOpen: boolean }) {
         pointerY = approach(pointerY, targetY, 1.7, dt);
       }
       // Same shape as `fieldVert`'s own "--- pointer ---" block — aspect-
-      // corrected distance, exponential falloff — but not the same constants.
-      // That shader's 7.0/0.055 pair is tuned for a canvas spanning the whole
-      // scrolling page: "close to the pointer" there still covers most of a
-      // viewport out of 18,067 points, so the push reads as widespread. Ported
-      // literally onto a ~800px-wide dialog with 90 points, the same falloff
-      // only reaches motes within roughly 100px of the cursor — everything
-      // else gets a sub-pixel nudge that just looks inert. REPEL_FALLOFF is
-      // loosened (not the shape, just the radius) so a couple dozen motes
-      // clear their neighborhood as the cursor passes, the same proportion of
-      // the field the shader moves, scaled to how few points there are here.
-      const REPEL_FALLOFF = 20.0;
-      const REPEL_STRENGTH = 0.06;
+      // corrected distance, exponential falloff, pull decaying with distance
+      // — but not the same constants. That shader's 7.0/0.055 pair is tuned
+      // for a canvas spanning the whole scrolling page and 18,067 points, so
+      // even a tight falloff there still reaches most of what's on screen.
+      // A ~800px dialog with 90 points needs the radius stretched past the
+      // box's own diagonal — otherwise the far side never clears the noise
+      // floor. REPEL_FALLOFF is low enough that the farthest possible mote
+      // still gets a visible double-digit push; REPEL_STRENGTH is what keeps
+      // a mote directly under the cursor still reading as the strongest one.
+      const REPEL_FALLOFF = 0.9;
+      const REPEL_STRENGTH = 0.065;
       const aspect = rect.width / rect.height;
       for (const mote of motes) {
         const dx = (mote.x - pointerX) * aspect;
@@ -295,6 +294,16 @@ export function WorkProject({ id, children }: { id: string; children: ReactNode 
       aria-label={label}
       onClose={onClose}
       onClick={enhanced ? onBackdropClick : undefined}
+      // Lenis registers a non-passive wheel listener on whatever it drives
+      // (the window below `lg`, `#deck-scroller` above it) and calls
+      // preventDefault on events that bubble up to it — and a top-layer
+      // dialog is paint-order magic only, so wheel events over an open case
+      // study still bubble through this element's real DOM ancestors into
+      // that listener. Without this attribute Lenis eats the wheel and
+      // scrolls the page BEHIND the modal while `.work-dialog-body` sits
+      // still. `data-lenis-prevent` is Lenis's own escape hatch: anything
+      // whose composed path carries it is left to scroll natively.
+      data-lenis-prevent=""
       {...(!enhanced ? { open: true } : {})}
     >
       {enhanced && (

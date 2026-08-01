@@ -12,7 +12,7 @@ export const profile = {
   lastName: 'Cantrell',
 
   /** One line, above the fold. Says what he does, not how he feels about it. */
-  roleLine: 'Full-stack engineer and AI developer. I build native apps, backends, and the AI running inside them.',
+  roleLine: 'Full-stack engineer and AI developer.',
 
   /** The stack tag under the role line — same job the tab bar's `kind` field
    *  does for a project: names what this is before anything else does. */
@@ -36,6 +36,12 @@ export const profile = {
   summary:
     'Self-taught full-stack engineer and AI developer in Southern Illinois. I design, build, ship, and maintain products end to end — native iOS and watchOS, React Native, Postgres, and the AI systems running inside them.',
 
+  /** The phone About screen's whole bio, in one breath: what he builds and
+   *  who it is all for. The two full paragraphs below stay a desktop read —
+   *  that screen is sized to one viewport and this line is what fits it. */
+  aboutPhoneLine:
+    'I design, build, and ship iOS apps and websites end to end. Jesus first, then my wife Gracie and our son Shepherd — everything else comes after.',
+
   /** The About panel's opening heading and its two paragraphs, in order. */
   aboutHeading: 'Self-taught — and I stand behind it',
   aboutBio: [
@@ -54,6 +60,9 @@ export const profile = {
 
   // TODO(owner): paste the real LinkedIn URL. Falsy = the link is not rendered.
   linkedin: '',
+
+  instagram: 'https://instagram.com/cantrellco.13',
+  instagramUser: 'cantrellco.13',
 
   // TODO(owner): drop the PDF at public/cody-cantrell-resume.pdf.
   // Falsy = the link is not rendered.

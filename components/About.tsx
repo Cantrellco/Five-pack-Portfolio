@@ -1,5 +1,5 @@
+import { CornerPlate } from '@/components/CornerPlate';
 import { profile } from '@/content/profile';
-import { flagship } from '@/content/projects';
 
 /**
  * The deck panel wrapping this owns the `about` id — that is what the anchors
@@ -10,10 +10,14 @@ import { flagship } from '@/content/projects';
  * itself, in a paper box over the engraving. That box was the whole reason
  * the portrait read as a card bolted onto the page rather than as the other
  * half of it. None of that content needed the image to sit on — it reads as
- * prose either way — so it moved here. The role line still opens the panel,
- * ahead of the heading and bio; the stack tag and the two CTAs now close it
- * instead, once the bio has made the case they exist to back up. Only the
- * name stayed behind, in the identity column's `<h1>`.
+ * prose either way — so the role line moved here and opens the panel, ahead
+ * of the heading and bio. Only the name stayed behind, in the identity
+ * column's `<h1>`.
+ *
+ * The stack tag and the two CTAs that used to close the panel are gone: this
+ * is a prose panel and they read as a spec sheet stapled to the end of it.
+ * Neither is lost — `CornerPlate` carries both links on every panel, `Contact`
+ * repeats them alongside the stack tag, and the OG card still uses the tag.
  *
  * Nothing in here carries `data-reveal`, and that is a performance decision
  * rather than a stylistic one. About is the panel the site opens on, so this
@@ -44,30 +48,43 @@ export function About() {
             sentence twice in a row on a phone. */}
         <p className="display-1 max-w-none hidden lg:block">{profile.roleLine}</p>
 
-        <h2 id="about-title" className="display-2 mt-[var(--sp-lg)]">
-          {profile.aboutHeading}
-        </h2>
-
-        <div className="body-copy mt-[var(--sp-md)] text-md leading-[1.5]">
-          {profile.aboutBio.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+        {/* The phone screen's whole top-left: role line as the claim, the
+            About heading as the one-line "who".
+            The full bio stays a desktop read — this screen is sized to fit
+            one viewport with the face and the marks below it, and two long
+            paragraphs do not fit that contract. No `data-reveal` for the
+            same LCP reason as the desktop role line above. */}
+        <div className="lg:hidden">
+          <p className="display-2 max-w-[24ch]">{profile.roleLine}</p>
+          {/* A real h2, not a p: below `lg` the desktop h2 further down is
+              `display: none`, and without this the whole opening screen has
+              no level-2 heading for a screen reader to navigate to. Preflight
+              resets headings to inherit size and weight, so it renders
+              exactly as the supporting line it looks like. No `id` — the
+              section's `aria-labelledby` stays pointed at the canonical one. */}
+          <h2 className="mt-[var(--sp-sm)] text-graphite">{profile.aboutHeading}</h2>
+          {/* The fast bio: one sentence of work, one of what outranks it.
+              Same no-`data-reveal` rule as everything else on this first
+              screen — nothing here may wait on the motion bundle. */}
+          <p className="mt-[var(--sp-sm)] max-w-[36ch] text-sm text-graphite">
+            {profile.aboutPhoneLine}
+          </p>
         </div>
 
-        {/* Stack tag and CTAs close the panel now instead of opening it: the
-            bio has made the case by this point, so the tag and the links
-            read as what backs it up rather than a claim made before any of
-            it is shown. */}
-        <p className="label mt-[var(--sp-lg)]">{profile.stackTag}</p>
+        <div className="hidden lg:block">
+          <h2 id="about-title" className="display-2 mt-[var(--sp-lg)]">
+            {profile.aboutHeading}
+          </h2>
 
-        <div className="mt-[var(--sp-sm)] flex flex-wrap items-center gap-[var(--sp-2xs)]">
-          <a className="cta" href={flagship.appStoreUrl} rel="noopener">
-            {flagship.name} on the App Store
-          </a>
-          <a className="cta-ghost" href={profile.github} rel="noopener">
-            GitHub
-          </a>
+          <div className="body-copy mt-[var(--sp-md)]">
+            {profile.aboutBio.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+
         </div>
+
+        <CornerPlate />
       </div>
     </section>
   );

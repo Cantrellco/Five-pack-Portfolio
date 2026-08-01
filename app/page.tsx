@@ -5,10 +5,10 @@ import { Flagship } from '@/components/Flagship';
 import { Harvest } from '@/components/Harvest';
 import { Identity } from '@/components/Identity';
 import { Masthead } from '@/components/Masthead';
+import { MobileMenu } from '@/components/MobileMenu';
 import { Resume } from '@/components/Resume';
 import { DeckProvider } from '@/components/deck/DeckContext';
 import { Panel } from '@/components/deck/Panel';
-import { TabBar } from '@/components/deck/TabBar';
 import { FieldMount } from '@/components/field/FieldMount';
 import { MotionProvider } from '@/components/motion/MotionProvider';
 import { Skills } from '@/components/work/Skills';
@@ -43,21 +43,20 @@ export default async function Page() {
       <DeckProvider>
         <div className="page">
           <Masthead />
+          {/* The phone's only piece of persistent chrome: a dropdown in the
+              top-right corner. Fixed to the viewport, so it lives here at the
+              page level rather than inside any column it would scroll with. */}
+          <MobileMenu />
 
           <main id="main" tabIndex={-1} className="deck outline-none">
             <div className="deck-identity">
-              <Identity github={github} />
+              <Identity />
             </div>
 
             {/* The right pane owns its own scrollbar from `lg` up, so the
                 motion layer drives Lenis and ScrollTrigger from this element
                 rather than from the window. It needs a stable id to be found. */}
             <div className="deck-content" id="deck-scroller">
-                {/* The masthead only has room for the tablist from `lg` up.
-                    Below that it lives here, at the head of the column it
-                    controls, where it is adjacent to what it changes. */}
-                <TabBar className="deck-tabs" idPrefix="tab-column" />
-
                 <Panel id="about">
                   <About />
                 </Panel>

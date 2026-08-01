@@ -6,9 +6,9 @@ import { resumeIsPlaceholder, roles, skillGroups } from '@/content/resume';
  * The resume, as a timeline.
  *
  * Rows are period → organisation → title → responsibilities, newest first,
- * separated by hairlines rather than boxed in cards. The period sits in the
- * aside column in mono, which is the same job mono does everywhere else on
- * this site: it carries data, not voice.
+ * separated by hairlines rather than boxed in cards. The period opens each
+ * row in mono, which is the same job mono does everywhere else on this
+ * site: it carries data — dates, counts — not voice.
  *
  * Nothing here invents a work history. `content/resume.ts` ships with every
  * row flagged `placeholder`, and while any row still carries that flag the
@@ -22,7 +22,7 @@ export function Resume() {
         id="resume-title"
         label="Resume"
         title="Where I have worked"
-        meta={resumeIsPlaceholder ? 'Draft — not yet filled in' : `${roles.length} roles`}
+        meta={resumeIsPlaceholder ? 'Draft — not yet filled in' : undefined}
       >
         {resumeIsPlaceholder ? (
           <p className="body-copy mt-[var(--sp-sm)] text-graphite" data-reveal>
@@ -34,10 +34,13 @@ export function Resume() {
         ) : null}
       </SectionHeader>
 
-      <ol className="mt-[var(--sp-xl)]">
+      <ol className="mt-[var(--sp-lg)]">
         {roles.map((role) => (
           <li key={role.id} className="border-t border-rule py-[var(--sp-lg)]">
-            <p className="label kicker" data-reveal>
+            {/* A date range is data, so it takes the mono voice — `.label`
+                is the sans-caps eyebrow for structural names, and a date in
+                it would put the two voices exactly backwards. */}
+            <p className="mono kicker text-graphite" data-reveal>
               {role.period}
               {role.location ? ` · ${role.location}` : ''}
             </p>
@@ -66,14 +69,18 @@ export function Resume() {
           What I work in
         </h3>
 
-        <dl className="grid gap-[var(--sp-md)] sm:grid-cols-3">
+        {/* Three columns at every width — the groups are short lists, and
+            side by side they read as one table of the stack rather than
+            three stacked lists a phone reader scrolls past. The phone drops
+            a type step and tightens the gap so all three fit 320px. */}
+        <dl className="grid grid-cols-3 gap-[var(--sp-xs)] sm:gap-[var(--sp-md)]">
           {skillGroups.map((group) => (
             <div key={group.label} data-reveal>
-              <dt className="mono text-graphite">{group.label}</dt>
+              <dt className="label">{group.label}</dt>
               <dd className="mt-[var(--sp-2xs)]">
                 <ul className="space-y-[var(--sp-3xs)]">
                   {group.items.map((item) => (
-                    <li key={item} className="text-sm">
+                    <li key={item} className="text-xs sm:text-sm">
                       {item}
                     </li>
                   ))}

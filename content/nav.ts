@@ -54,7 +54,7 @@ export const WORK_TABS = [
     id: 'workout-buddy',
     label: flagship.name,
     kind: flagship.kind,
-    summary: 'Logs sets, runs auto-progressing mesocycles, and lets an AI coach propose the next block.',
+    summary: 'Log sets, auto programming, AI with full access.',
   },
   {
     id: harvest.id,

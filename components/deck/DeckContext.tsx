@@ -22,6 +22,14 @@ type DeckValue = {
    * hydration mismatch: the two renders are identical by construction.
    */
   enhanced: boolean;
+  /**
+   * True from `lg` up, live across resizes. The panels only claim
+   * `role="tabpanel"` when this holds: below the breakpoint the masthead
+   * tablist is `display: none` and the menu items are plain buttons, so a
+   * tabpanel there would be announced with no owning tab anywhere in the
+   * accessibility tree.
+   */
+  wide: boolean;
   active: string;
   show: (panel: string) => void;
 };
@@ -47,8 +55,20 @@ const NEVER_CHANGES = () => () => {};
 const onClient = () => true;
 const onServer = () => false;
 
+/* The same store shape for the breakpoint, except this one really does
+   change: a desktop window dragged across 64rem re-renders the provider and
+   the tabpanel roles follow the layout they describe. */
+const WIDE_QUERY = '(min-width: 64rem)';
+const subscribeWide = (onChange: () => void) => {
+  const mq = window.matchMedia(WIDE_QUERY);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+};
+const wideNow = () => window.matchMedia(WIDE_QUERY).matches;
+
 export function DeckProvider({ children }: { children: ReactNode }) {
   const enhanced = useSyncExternalStore(NEVER_CHANGES, onClient, onServer);
+  const wide = useSyncExternalStore(subscribeWide, wideNow, onServer);
 
   /* Landing on /#resume must open the resume. Reading the hash here rather
      than in an effect is safe precisely because `active` cannot affect the
@@ -166,7 +186,10 @@ export function DeckProvider({ children }: { children: ReactNode }) {
     hasNavigated.current = true;
   }, [enhanced, active]);
 
-  const value = useMemo(() => ({ enhanced, active, show }), [enhanced, active, show]);
+  const value = useMemo(
+    () => ({ enhanced, wide, active, show }),
+    [enhanced, wide, active, show],
+  );
 
   return <DeckCtx.Provider value={value}>{children}</DeckCtx.Provider>;
 }

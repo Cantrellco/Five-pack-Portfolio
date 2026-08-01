@@ -20,6 +20,7 @@ export function ClientSite({ site }: { site: ClientSiteContent }) {
         id={`${site.id}-title`}
         label="Client work"
         title={site.name}
+        logoId={site.id}
         meta={<span className="block">{site.kind}</span>}
       >
         <p className="lede mt-[var(--sp-md)] max-w-[46ch] text-graphite" data-reveal>

@@ -7,7 +7,11 @@ import { flagship } from '@/content/projects';
  * worth shipping.
  */
 export function personJsonLd() {
-  const sameAs = [profile.github, profile.linkedin].filter(Boolean);
+  // `sameAs` is exactly "other official profiles of this same person", so a
+  // real Instagram account belongs in it alongside GitHub. Still filtered:
+  // the empty ones are placeholders, and a blank string here would publish a
+  // link to nowhere as a claimed identity.
+  const sameAs = [profile.github, profile.linkedin, profile.instagram].filter(Boolean);
 
   return {
     '@context': 'https://schema.org',

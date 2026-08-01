@@ -1,19 +1,11 @@
 /**
  * The resume.
  *
- * ─────────────────────────────────────────────────────────────────────────────
- * TODO(owner) — THIS FILE IS A SHELL. FILL IT IN.
- *
- * Every entry below is marked `placeholder: true`. Nothing here is a claim
- * about your history, because nothing here was written from your history — the
- * layout, the typography and the tab are finished, the facts are not.
- *
- * To fill it in: replace the strings, delete `placeholder: true` from each
- * entry you have made real. The site reads that flag and refuses to present
- * unfilled rows as fact — same rule the training data follows via
- * `fieldStats.placeholder` in `lib/generated/field-stats.ts`. An empty
- * `roles` array hides the whole timeline rather than rendering an empty frame.
- * ─────────────────────────────────────────────────────────────────────────────
+ * Newest-start-first, same rule `startedAt` documents on the type below.
+ * Workout Buddy's build started before Gifford and the freelance work did,
+ * but L&E Recycling — the day job that paid for those nights and
+ * weekends — is listed last because May 2019 is the oldest start date here,
+ * not because it matters least.
  */
 
 export type ResumeRole = {
@@ -38,27 +30,50 @@ export type ResumeRole = {
    list of the same thing, and the type should say so. */
 export const roles: readonly ResumeRole[] = [
   {
-    id: 'role-1',
-    period: 'TODO — e.g. JAN 2024 — PRESENT',
-    startedAt: '2024-01',
-    org: 'TODO — employer or "Independent"',
-    title: 'TODO — your title',
-    location: 'TODO — city, state, or "Remote"',
+    id: 'gifford-properties',
+    period: 'MAR 2026 — PRESENT',
+    startedAt: '2026-03',
+    org: 'Gifford Properties',
+    title: 'Lead Developer',
     bullets: [
-      'TODO — what you owned, stated as a responsibility.',
-      'TODO — what you shipped, with the platform or stack named.',
-      'TODO — an outcome with a number in it, if you have one.',
+      'Lead developer for the company’s web presence, designing and building sites for two of its properties.',
+      'Little Town: seven hand-built pages — HTML, CSS and a little JavaScript, no framework — for a children’s play space, ordered to answer a parent’s questions the way a parent actually asks them.',
+      'Fusion Coffee: a Next.js site built from the shop’s own moodboard, exported static and installable as a PWA, with ordering handed off to their existing Square flow.',
     ],
-    placeholder: true,
   },
   {
-    id: 'role-2',
-    period: 'TODO — earlier role',
-    startedAt: '2022-01',
-    org: 'TODO — employer',
-    title: 'TODO — your title',
-    bullets: ['TODO — what you did there.'],
-    placeholder: true,
+    id: 'freelance',
+    period: 'MAR 2026 — PRESENT',
+    startedAt: '2026-03',
+    org: 'Independent',
+    title: 'Freelance Developer',
+    bullets: [
+      'PC Pro Inspections: a static React marketing site for a residential home inspector, with an instant quote calculator, no-backend lead capture, and local SEO built to rank for searches in the next town over.',
+      'Faith Outreach: redesigned a church’s website in place on Squarespace 7.1 — the platform its own staff already knew — and delivered it as a project binder: redesign plan, brand kit, page-by-page copy, a build runbook, and a redirect map that kept the congregation’s existing links and search rankings intact.',
+    ],
+  },
+  {
+    id: 'workout-buddy',
+    period: 'JUL 2025 — PRESENT',
+    startedAt: '2025-07',
+    org: 'Workout Buddy',
+    title: 'Founder & Developer',
+    bullets: [
+      'Designed, built and shipped a hypertrophy training app for iPhone and Apple Watch — auto-progressing mesocycles against RP volume landmarks, with an AI coach that proposes program changes the app validates before applying them.',
+      'Built the native depth end to end: a SwiftUI watchOS app on a real HKWorkoutSession, Live Activities, App Intents for Siri, Shortcuts and Spotlight, home and watch widgets, and two custom Expo native modules bridging them into React Native.',
+      'Own the whole product solo on a React Native and Supabase (Postgres, row-level security) stack — roadmap, App Store review, crash triage and the support inbox. Shipped to the App Store in June 2026.',
+    ],
+  },
+  {
+    id: 'le-recycling',
+    period: 'MAY 2019 — MAR 2026',
+    startedAt: '2019-05',
+    org: 'L&E Recycling',
+    title: 'Warehouse Manager',
+    bullets: [
+      'Managed day-to-day warehouse operations for nearly seven years — staff, logistics and inventory.',
+      'Designed and built a custom inventory management system for the company from scratch, self-taught, alongside full operational duties.',
+    ],
   },
 ];
 

@@ -16,20 +16,7 @@ import { useDeck } from './DeckContext';
  * The swap happens on a normal re-render after mount, not during hydration,
  * so React is comparing two client renders and no markup mismatch is possible.
  */
-export function TabBar({
-  className,
-  idPrefix = 'tab',
-}: {
-  className?: string;
-  /**
-   * Two tablists exist — one in the masthead from `lg` up, one at the head of
-   * the content column below it — and only ever one is visible. They still
-   * both render, so their tab ids have to differ or the document ships
-   * duplicates. The panels carry `aria-label` rather than pointing at either
-   * list, so neither prefix is load-bearing.
-   */
-  idPrefix?: string;
-}) {
+export function TabBar({ className }: { className?: string }) {
   const { enhanced, active, show } = useDeck();
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -90,7 +77,7 @@ export function TabBar({
             key={item.panel}
             type="button"
             role="tab"
-            id={`${idPrefix}-${item.panel}`}
+            id={`tab-${item.panel}`}
             aria-selected={selected}
             aria-controls={item.panel}
             tabIndex={selected ? 0 : -1}

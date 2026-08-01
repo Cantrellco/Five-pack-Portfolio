@@ -484,6 +484,88 @@ test.describe('with JavaScript disabled', () => {
   });
 });
 
+test.describe('the phone layout', () => {
+  // Below `lg` the page is a different machine: the masthead tablist is
+  // display: none, the identity column is screen-reader-only, and the menu
+  // dropdown is the only navigation. None of the desktop-viewport tests
+  // exercise any of that, so it gets its own block at a real phone size.
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('the menu opens, switches panels, closes, and returns focus to its button', async ({
+    page,
+  }) => {
+    const problems = watchConsole(page);
+    await page.goto('/');
+
+    const button = page.locator('.mobile-menu-button');
+    await expect(button).toBeVisible();
+    await button.click();
+
+    const list = page.locator('.mobile-menu-list');
+    await expect(list).toBeVisible();
+    await list.getByRole('button', { name: 'Contact' }).click();
+
+    await expect(page.locator('#contact')).toBeVisible();
+    await expect(page.locator('#about')).toBeHidden();
+    // The menu closes behind the choice and hands focus back to its button,
+    // the way a disclosure is supposed to — not to <body>.
+    await expect(list).toBeHidden();
+    await expect(button).toBeFocused();
+
+    // Escape from an open menu does the same.
+    await button.click();
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+    await expect(button).toBeFocused();
+
+    expect(problems).toEqual([]);
+  });
+
+  test('the level-1 heading stays in the tree, and no orphan tabpanel is exposed', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    // The header strip is gone; the name survives as a screen-reader-only
+    // heading. `toContainText` reads the tree, not the paint.
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Cantrell');
+
+    // No tablist exists at this width, so no panel may claim to be a
+    // tabpanel — a tabpanel with no owning tab anywhere in the tree is a
+    // structure screen readers announce but cannot navigate.
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.locator('[role="tabpanel"]')).toHaveCount(0);
+  });
+
+  test.describe('with JavaScript disabled', () => {
+    test.use({ javaScriptEnabled: false });
+
+    test('the menu toggles natively and its anchors land on the section they name', async ({
+      page,
+    }) => {
+      await page.goto('/');
+
+      // Native <details>: the summary toggles with no scripting at all.
+      await page.locator('.mobile-menu-button').click();
+      const contact = page.locator('.mobile-menu-list a[href="#contact"]');
+      await expect(contact).toBeVisible();
+      await contact.click();
+
+      // The jump lands at the section, not ~100px short of it — the desktop
+      // masthead's scroll-margin must not apply where no masthead exists.
+      // Polled because `scroll-behavior: smooth` animates the jump.
+      await expect(page).toHaveURL(/#contact$/);
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            Math.abs(document.getElementById('contact')!.getBoundingClientRect().top),
+          ),
+        )
+        .toBeLessThanOrEqual(80);
+    });
+  });
+});
+
 test.describe('with WebGL unavailable', () => {
   test('falls back to the static frame and stays quiet', async ({ page }) => {
     const problems = watchConsole(page);
