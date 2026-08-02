@@ -1917,17 +1917,37 @@ dd {
 
 /* An X drawn from two rotated bars rather than a glyph, so it never depends
    on a font shipping the character or rendering it at a consistent weight —
-   same reasoning as every other icon on this site. */
+   same reasoning as every other icon on this site.
+
+   `z-index: 1` is load-bearing, not decorative. `.work-dialog-body`'s
+   content is wrapped in `.section` — the same class every panel on the
+   site uses — and that base rule carries `position: relative` (see
+   `.section` above). A positioned descendant with `z-index: auto` stacks
+   at the SAME level as a positioned sibling with `z-index: auto`, and
+   between two elements at that level, the one later in the DOM wins —
+   `.section` renders after this button, so without an explicit z-index it
+   painted over the button's own bars, and a reader scrolling a long case
+   study would pass a line of body text straight through the X on the way
+   by. This is what actually fixes that; a plate alone would not have.
+
+   The plate itself: `--paper-2` and a `--graphite` border, same language
+   as `.mobile-menu-button` and for the same reason — a control filled
+   with `.work-dialog`'s own `--paper` was a control with no surface of
+   its own, legible only where nothing happened to be behind it. */
 .work-dialog-close {
   position: absolute;
   top: var(--sp-md);
   right: var(--sp-md);
-  width: 1.75rem;
-  height: 1.75rem;
+  z-index: 1;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
-  background: none;
-  border: 0;
+  background-color: var(--paper-2);
+  border: 1px solid var(--graphite);
   cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
 }
 
 .work-dialog-close::before,
@@ -1936,7 +1956,7 @@ dd {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 1rem;
+  width: 1.1rem;
   height: 1.5px;
   background-color: var(--graphite);
   transition: background-color var(--motion-fast) var(--motion-ease);
@@ -1948,6 +1968,12 @@ dd {
 
 .work-dialog-close::after {
   transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.work-dialog-close:hover,
+.work-dialog-close:focus-visible {
+  background-color: color-mix(in srgb, var(--signal) 8%, var(--paper-2));
+  border-color: var(--ink);
 }
 
 .work-dialog-close:hover::before,
@@ -2648,24 +2674,21 @@ dd {
     padding: var(--sp-xl) var(--gutter) var(--sp-2xl);
   }
 
-  /* On a full-page case study the close control sits over whatever scrolls
-     past it, so it gets the same treatment as every other piece of floating
-     chrome: a solid paper plate, framed, never a blend.
-
+  /* Position and size only now — the plate itself (`--paper-2`, a
+     `--graphite` border, the z-index that keeps it above the scrolling
+     text) is `.work-dialog-close`'s own base rule, shared with desktop.
      2.75rem, matching `.mobile-menu-button` — the phone's other piece of
-     floating chrome — rather than the 2.5rem it carried. The dialog goes
-     edge-to-edge at this breakpoint (`width: 100%`, `height: 100dvh` above),
-     so there is no exposed backdrop left to tap: this button is the only
-     visible way out of a case study, and the only other path is the browser's
-     own back gesture. A control with that job does not get to be 4px under
-     the touch minimum. */
+     floating chrome. The dialog goes edge-to-edge at this breakpoint
+     (`width: 100%`, `height: 100dvh` above), so there is no exposed
+     backdrop left to tap: this button is the only visible way out of a
+     case study, and the only other path is the browser's own back
+     gesture. A control with that job does not get to be 4px under the
+     touch minimum. */
   .work-dialog:modal .work-dialog-close {
     top: var(--sp-sm);
     right: var(--gutter);
     width: 2.75rem;
     height: 2.75rem;
-    background-color: var(--paper);
-    border: 1px solid var(--rule);
   }
 }
 
