@@ -2341,22 +2341,17 @@ dd {
     padding-block: var(--sp-lg) var(--sp-xl);
   }
 
-  /* ---- the one viewport-fit screen -------------------------------------- */
+  /* ---- the two viewport-fit screens ------------------------------------ */
 
-  /* `min-height`, not `height` with a clip: on current-generation phones
-     (~360x640 and up, measured) the content fits and the screen is exactly
-     one viewport with nothing to scroll. On shorter viewports — an original
-     SE, a landscape phone — the same screen runs a few lines past the fold
-     and the page scrolls those lines rather than clipping copy off the
-     bottom. That trade is deliberate: a hard `height` plus overflow clipping
-     would make the shortfall unreadable instead of merely scrollable.
-
-     About used to share this lock with Contact, back when its phone bio was
-     a separate, shorter trim held to this same budget. It now renders the
-     same paragraphs as desktop (see `aboutBio` in content/profile.ts), which
-     routinely runs taller than one viewport, so it opts out here and falls
-     back to `.deck-content .section`'s ordinary padding — an ordinary
-     scrolling panel, same as Work. */
+  /* Contact: `min-height`, not `height` with a clip. On current-generation
+     phones (~360x640 and up, measured) the content fits and the screen is
+     exactly one viewport with nothing to scroll. On shorter viewports — an
+     original SE, a landscape phone — the same screen runs a few lines past
+     the fold and the page scrolls those lines rather than clipping copy off
+     the bottom. That trade is deliberate: a hard `height` plus overflow
+     clipping would make the shortfall unreadable instead of merely
+     scrollable. Contact has no flexible child to absorb a shortfall any
+     other way, so the page itself is the escape valve. */
   #contact .section {
     min-height: 100svh;
     display: flex;
@@ -2364,6 +2359,28 @@ dd {
     padding-block: var(--sp-md) 0;
   }
 
+  /* About: a hard `height`, not `min-height`. It differs from Contact on
+     purpose now that its bio matches desktop's (see `aboutBio` in
+     content/profile.ts) and routinely runs longer than this frame has room
+     for. `min-height` alone cannot produce a scrollable middle here — a flex
+     column with only a floor sizes itself to its content first and applies
+     the floor after, so a `flex: 1; min-height: 0` child never gets clamped
+     to "whatever's left" and instead just grows the whole frame past one
+     viewport, taking the pinned portrait down with it (measured: exactly
+     what shipped before this rule). `height: 100svh` makes the frame a true
+     ceiling, which is what lets `.about-bio` below do the shrinking and
+     scrolling instead. The shortfall this trades away — Contact's "a few
+     lines past the fold on a very short phone" case — cannot happen here:
+     `.about-bio` is the one flexible child, and it absorbs any shortfall
+     into its own scrollbar rather than the frame's height. */
+  #about .section {
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding-block: var(--sp-md) 0;
+  }
+
+  #about .shell,
   #contact .shell {
     flex: 1;
     display: flex;
@@ -2371,12 +2388,22 @@ dd {
     min-height: 0;
   }
 
-  /* About's own corner-plate no longer sits in a flex column that could pin
-     it to the floor with `margin-top: auto` (see `.corner-plate` below) — it
-     is back in normal block flow, so it needs an explicit gap above it
-     instead of an implicit one. */
-  #about .corner-plate {
-    margin-top: var(--sp-xl);
+  /* The scrollable middle: `flex: 1` claims whatever room is left between the
+     role line and the pinned portrait, `min-height: 0` is what lets a flex
+     item shrink below its content size at all (without it the box would
+     just grow to fit the text, forcing `#about .section` to grow with it
+     despite the `height` cap above — a flex item's automatic minimum size is
+     its content size unless this is set), and `overflow-y: auto` turns the
+     leftover into a scroll box instead of an overflow. `overscroll-behavior:
+     contain` keeps a finger that scrolls this box to its end from also
+     dragging the page underneath it — the box's own scroll stops there
+     instead of handing off to whatever is behind it. Native scroll, no
+     Lenis: MotionProvider only smooths the window, and this is not it. */
+  #about .about-bio {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   /* Contact's display type, one step down per element: the headline and the
@@ -2643,10 +2670,11 @@ dd {
 
    About was here once too, on a two-paragraph phone-only trim held to this
    same tall-phone gate. It renders the full desktop `aboutBio` at every size
-   now (see content/profile.ts) and scrolls when that runs past one viewport,
-   so it no longer needs a spare-room query — see the "one viewport-fit
-   screen" note further up this file. Contact keeps its figures, which is
-   what the numbers above were measured against.
+   now (see content/profile.ts), which no longer needs a spare-room query:
+   the extra length scrolls inside `.about-bio` instead of needing extra
+   frame height to sit in — see the "two viewport-fit screens" note further
+   up this file. Contact keeps its figures, which is what the numbers above
+   were measured against.
 -------------------------------------------------------------------------- */
 
 /* Hidden by default, so the short phone is the base case and the tall one is

@@ -75,11 +75,13 @@ export function About() {
 
             No `hidden lg:block` any more: the phone screen used to carry its
             own shorter trim of this copy, sized to a fixed one-viewport
-            budget. It now renders the same paragraphs as desktop and scrolls
-            below `lg` like every other panel — see the "two viewport-fit
-            screens" note in globals.css. One `body-copy` block, one piece of
-            copy, both breakpoints. */}
-        <div className="body-copy mt-[var(--sp-sm)]">
+            budget. It now renders the same paragraphs as desktop. The
+            `about-bio` class is what keeps the portrait pinned to the floor
+            below `lg` despite that: it scrolls internally inside the fixed
+            frame instead of pushing the frame (and the portrait with it)
+            past one viewport — see globals.css. Desktop ignores the class;
+            the panel there already has room. */}
+        <div className="body-copy about-bio mt-[var(--sp-sm)]">
           {profile.aboutBio.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
