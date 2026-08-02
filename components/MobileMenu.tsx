@@ -5,10 +5,10 @@ import { NAV } from '@/content/nav';
 import { useDeck } from './deck/DeckContext';
 
 /**
- * The phone layout's section index: one button in the top-right corner that
- * opens a dropdown, replacing the 2×2 tab block and the header strip that
- * carried it. Desktop never shows this (`.mobile-menu` is `display: none`
- * from `lg` up); the masthead tablist covers those widths.
+ * The phone layout's section index: a small trigger in the top-right corner
+ * that opens a full-screen list, replacing the 2×2 tab block and the header
+ * strip that carried it. Desktop never shows this (`.mobile-menu` is
+ * `display: none` from `lg` up); the masthead tablist covers those widths.
  *
  * Built on `<details>` so the no-JS story holds by itself: with scripting off
  * the summary still toggles, and the items are ordinary anchors into a page
@@ -17,10 +17,10 @@ import { useDeck } from './deck/DeckContext';
  *
  * One accepted cost on the no-JS path: native `<details>` does not close on
  * a same-page anchor navigation, so after following an item the open list
- * keeps floating over the section's top-right corner until the summary is
- * tapped again. There is no CSS-only close, the summary stays visible to
- * dismiss it, and no content is ever unreachable — a known trade, not an
- * oversight.
+ * keeps covering the screen until the summary is tapped again. There is no
+ * CSS-only close, the summary stays visible (and on top — see the z-index
+ * note on `.mobile-menu-button`) to dismiss it, and no content is ever
+ * unreachable — a known trade, not an oversight.
  */
 export function MobileMenu() {
   const { enhanced, active, show } = useDeck();
@@ -31,6 +31,19 @@ export function MobileMenu() {
     if (!enhanced) return;
     const details = ref.current;
     if (!details) return;
+    const main = document.getElementById('main');
+
+    // A full-screen open state has to make the page behind it unreachable,
+    // not just invisible — otherwise Tab (or a screen reader's virtual
+    // cursor) can still wander into content that a sighted reader can no
+    // longer see. `inert` is the platform's own answer to that. One `toggle`
+    // listener covers all three ways the state can change below (a native
+    // click on the summary, Escape, an outside tap) rather than setting it
+    // in each handler separately.
+    const onToggle = () => {
+      if (main) main.inert = details.open;
+    };
+    details.addEventListener('toggle', onToggle);
 
     // Closing collapses the content under the focused item, which would
     // silently reset focus to <body> — a keyboard reader would have to Tab
@@ -41,7 +54,7 @@ export function MobileMenu() {
       details.open = false;
       summaryRef.current?.focus();
     };
-    // A tap anywhere outside the menu closes it — a floating dropdown that
+    // A tap anywhere outside the menu closes it — a full-screen list that
     // stays open over content it no longer relates to is debris. No focus
     // grab here: the reader deliberately put their attention elsewhere.
     const onPointerDown = (event: PointerEvent) => {
@@ -53,8 +66,10 @@ export function MobileMenu() {
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('pointerdown', onPointerDown);
     return () => {
+      details.removeEventListener('toggle', onToggle);
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('pointerdown', onPointerDown);
+      if (main) main.inert = false;
     };
   }, [enhanced]);
 

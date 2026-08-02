@@ -43,9 +43,10 @@ export default async function Page() {
       <DeckProvider>
         <div className="page">
           <Masthead />
-          {/* The phone's only piece of persistent chrome: a dropdown in the
-              top-right corner. Fixed to the viewport, so it lives here at the
-              page level rather than inside any column it would scroll with. */}
+          {/* The phone's only piece of persistent chrome: a small trigger in
+              the top-right corner that opens a full-screen section index.
+              Fixed to the viewport, so it lives here at the page level
+              rather than inside any column it would scroll with. */}
           <MobileMenu />
 
           <main id="main" tabIndex={-1} className="deck outline-none">

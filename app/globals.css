@@ -909,7 +909,8 @@ dd {
    rule underneath for everyone else. Colour alone never carries it.
 -------------------------------------------------------------------------- */
 
-/* The phone's section index: one dropdown hanging in the top-right corner.
+/* The phone's section index: a small trigger in the top-right corner that
+   opens a full-screen list, not a dropdown that stays pinned to the corner.
    The breakpoint lives here rather than as a `lg:hidden` utility because
    this rule is loaded after Tailwind and would otherwise win the cascade
    against it — two single-class selectors, last one wins. */
@@ -979,11 +980,21 @@ dd {
      /`.rule-bottom`), not for framing a piece of chrome against the busy,
      dotted field behind it — `.work-tile`'s resting border is the same
      `--graphite` weight for the same reason, a control surface needs more
-     definition than a content divider does. */
+     definition than a content divider does.
+
+     `position: relative` and `z-index: 1` are load-bearing, not decoration:
+     this button is what closes the full-screen list below it, and that list
+     is later in the DOM. Two elements at the same "positioned, z-index:
+     auto" stacking level paint in DOM order, so without an explicit z-index
+     the list — later, and now genuinely a full page of its own — would
+     paint over the one control that dismisses it. Same bug, same fix, as
+     `.work-dialog-close`. */
   .mobile-menu-button {
     /* `list-style: none` plus the -webkit rule below is what removes the
        disclosure triangle everywhere. */
     list-style: none;
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1033,17 +1044,35 @@ dd {
     transform: translateY(-7px) rotate(-45deg);
   }
 
-  /* Same surface as the button above, for the same reason: a plane of its
-     own instead of the page's own colour with a hairline round it. */
+  /* A full screen, not a card in the corner. A small floating dropdown had
+     been through two rounds of surface polish (a plate of its own, real
+     hover states, a kicker in place of row dividers) and still read as a
+     generic widget stapled onto the corner — the shape itself was the
+     problem, not the colours on it. This is the site's OWN "one viewport"
+     idiom instead: the same contract `#about`/`#contact` give the portrait
+     (see the "two viewport-fit screens" note further down this file),
+     applied to navigation — the menu becomes the whole screen for the
+     moment it is open, an editorial contents page rather than a popover.
+
+     `position: fixed; inset: 0` rather than anchoring to `.mobile-menu`:
+     `position: fixed` measures against the viewport directly regardless of
+     what it is nested in, so this does not need `.mobile-menu` itself to
+     become full-screen too — the trigger stays exactly where it was, and
+     only grows a page behind it.
+
+     `overflow-y: auto` is a safety net, not the expected path: four short
+     words at this size measure well under any real phone's height with
+     room to spare. It is here for the same reason `.about-bio` scrolls
+     rather than being trusted to always fit — an unusually short viewport
+     gets a scrollbar instead of clipped copy. */
   .mobile-menu-list {
-    position: absolute;
-    top: calc(100% + 0.4rem);
-    right: 0;
-    min-width: 11rem;
+    position: fixed;
+    inset: 0;
     display: flex;
     flex-direction: column;
-    background-color: var(--paper-2);
-    border: 1px solid var(--graphite);
+    padding: calc(var(--sp-xs) + 2.75rem + var(--sp-lg)) var(--gutter) var(--sp-xl);
+    background-color: var(--paper);
+    overflow-y: auto;
   }
 
   /* The same mono-free, uppercase eyebrow every panel opens with (see
@@ -1051,15 +1080,18 @@ dd {
      one too, so it reads as a labelled index rather than a bare list.
      `aria-hidden`: the `<nav>` already has its accessible name from
      `aria-label="Sections"` above; a second, visible "Sections" would
-     announce twice. Its own hairline is the ONE divider in this control —
-     it separates the label from the items it labels, which is a real
-     boundary; the items below it no longer get a rule each (see
-     `.mobile-menu-item`), because four rows of hairlines under one one
-     another was reading as a spreadsheet, not a menu. */
+     announce twice. Left-aligned now, not right: a small card anchored to
+     the trigger button read naturally flush right under it, but a full
+     screen is a page, and every other page on this site reads from the
+     left. Its hairline is the one divider in this control — it separates
+     the label from the list it labels, which is a real boundary; the items
+     below it don't get one each (see `.mobile-menu-item`) because rows of
+     identical hairlines read as a spreadsheet, not an index. */
   .mobile-menu-kicker {
     display: block;
-    padding: var(--sp-2xs) var(--sp-sm) var(--sp-3xs);
-    text-align: right;
+    padding-bottom: var(--sp-sm);
+    margin-bottom: var(--sp-xs);
+    text-align: left;
     border-bottom: 1px solid var(--rule);
   }
 
@@ -1097,24 +1129,55 @@ dd {
     animation-delay: 160ms;
   }
 
-  /* No border of its own any more — the kicker's hairline above is the only
-     divider in the box (see `.mobile-menu-kicker`). Padding is in `--sp-*`
-     tokens rather than `em` so its right edge lines up exactly with the
-     kicker's, which is padded the same way. */
+  /* Four words filling a whole screen get to be big: the same display
+     voice `.display-2` sets for the phone role line, a step up in size
+     since this page has nothing else competing for the room. No border of
+     its own — the kicker's hairline above is the only divider in this
+     control (see `.mobile-menu-kicker`); at this size, generous padding
+     between rows carries the rhythm a hairline would otherwise be doing.
+     `width: 100%` is the tap target: a right-aligned word was already the
+     full row's width, but a left-aligned one is not, and the whole row
+     should answer a tap, not just the glyphs. */
   .mobile-menu-item {
     appearance: none;
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-sm);
+    width: 100%;
     background-color: transparent;
     border: 0;
-    padding: var(--sp-xs) var(--sp-sm);
-    font-family: var(--ff-body);
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    text-align: right;
+    padding: var(--sp-sm) var(--sp-xs);
+    font-family: var(--ff-display);
+    font-size: var(--fs-2xl);
+    font-weight: 400;
+    line-height: var(--lh-tight);
+    letter-spacing: var(--ls-display);
+    text-align: left;
     color: var(--graphite);
     cursor: pointer;
     transition:
       color var(--motion-fast) var(--motion-ease),
       background-color var(--motion-fast) var(--motion-ease);
+  }
+
+  /* The order here IS the site's real order — the same sequence the
+     desktop tablist walks — so a number earns its place instead of
+     decorating one; see `content/nav.ts`. `counter-reset` on the list
+     rather than the nav's own index in `NAV.map`: CSS numbers the rows it
+     actually paints, which stays correct with no markup to keep in sync. */
+  .mobile-menu-list {
+    counter-reset: mobile-menu-item;
+  }
+
+  .mobile-menu-item::before {
+    counter-increment: mobile-menu-item;
+    content: counter(mobile-menu-item, decimal-leading-zero);
+    flex: none;
+    font-family: var(--ff-mono);
+    font-size: var(--fs-sm);
+    letter-spacing: var(--ls-label);
+    color: var(--graphite);
+    transition: color var(--motion-fast) var(--motion-ease);
   }
 
   /* A tap (or a hover, from a trackpad/mouse on a touch-capable laptop) got
@@ -1133,16 +1196,17 @@ dd {
     background-color: color-mix(in srgb, var(--signal) 16%, transparent);
   }
 
-  /* The open section is named by the signal hairline on the item's right
-     edge — an inset shadow rather than a border, so nothing shifts — plus
-     the same faint wash `:hover` uses, so "this is where you are" and "this
-     is what you're about to tap" read as one family instead of two unrelated
-     treatments. Colour alone never carries it: enhanced items also carry
-     `aria-current`. */
+  /* The open section is named by its number, in `--signal`, rather than by
+     a bar or a fill on the whole row — at this size and this short a list,
+     the number is already the thing a reader's eye lands on first, so it is
+     what carries "you are here". Colour alone never carries it: enhanced
+     items also carry `aria-current`. */
   .mobile-menu-item[aria-current='true'] {
     color: var(--ink);
-    background-color: color-mix(in srgb, var(--signal) 6%, transparent);
-    box-shadow: inset -2px 0 0 var(--signal);
+  }
+
+  .mobile-menu-item[aria-current='true']::before {
+    color: var(--signal);
   }
 }
 
