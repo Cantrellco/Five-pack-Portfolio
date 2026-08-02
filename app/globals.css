@@ -88,27 +88,35 @@ body {
 }
 
 /* One scrollbar treatment, everywhere something scrolls on its own: the
-   document below `lg`, the deck's own right-hand pane at `lg` and up, and a
-   dialog's case study. `scrollbar-color` covers Firefox; Chromium and Safari
-   need the track styled explicitly too, not just the thumb — left alone, the
-   track paints as an opaque white plate the instant it's pressed, on top of
-   whichever of these three is showing paper underneath it. */
+   document below `lg`, the deck's own right-hand pane at `lg` and up, a
+   dialog's case study, and About's own bio box on phone. `scrollbar-color`
+   covers Firefox; Chromium and Safari need the track styled explicitly too,
+   not just the thumb — left alone, the track paints as an opaque white
+   plate the instant it's pressed, on top of whichever of these is showing
+   paper underneath it. Moot on the phones this actually ships to — iOS and
+   Android both draw their own overlay scrollbar regardless — but real on a
+   touch-capable laptop or a desktop browser resized narrow, so it stays
+   applied everywhere rather than only where the more common case can see
+   it. */
 html,
 .deck-content,
-.work-dialog:modal .work-dialog-body {
+.work-dialog:modal .work-dialog-body,
+#about .about-bio {
   scrollbar-width: thin;
   scrollbar-color: var(--graphite) transparent;
 }
 
 html::-webkit-scrollbar,
 .deck-content::-webkit-scrollbar,
-.work-dialog:modal .work-dialog-body::-webkit-scrollbar {
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar,
+#about .about-bio::-webkit-scrollbar {
   width: 10px;
 }
 
 html::-webkit-scrollbar-track,
 .deck-content::-webkit-scrollbar-track,
-.work-dialog:modal .work-dialog-body::-webkit-scrollbar-track {
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-track,
+#about .about-bio::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -118,7 +126,8 @@ html::-webkit-scrollbar-track,
    chase. */
 html::-webkit-scrollbar-thumb,
 .deck-content::-webkit-scrollbar-thumb,
-.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb {
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb,
+#about .about-bio::-webkit-scrollbar-thumb {
   background-color: var(--graphite);
   border-radius: 999px;
 }
@@ -126,9 +135,11 @@ html::-webkit-scrollbar-thumb,
 html::-webkit-scrollbar-thumb:hover,
 .deck-content::-webkit-scrollbar-thumb:hover,
 .work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb:hover,
+#about .about-bio::-webkit-scrollbar-thumb:hover,
 html::-webkit-scrollbar-thumb:active,
 .deck-content::-webkit-scrollbar-thumb:active,
-.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb:active {
+.work-dialog:modal .work-dialog-body::-webkit-scrollbar-thumb:active,
+#about .about-bio::-webkit-scrollbar-thumb:active {
   background-color: color-mix(in srgb, var(--graphite) 55%, var(--ink) 45%);
 }
 
@@ -2544,12 +2555,28 @@ dd {
      contain` keeps a finger that scrolls this box to its end from also
      dragging the page underneath it — the box's own scroll stops there
      instead of handing off to whatever is behind it. Native scroll, no
-     Lenis: MotionProvider only smooths the window, and this is not it. */
+     Lenis: MotionProvider only smooths the window, and this is not it.
+
+     The bottom edge fades rather than cutting text off square — the same
+     `mask-image` device `.deck-content` uses to hide its own scrolled
+     content under the masthead, aimed at the opposite edge. A hard clip
+     reads as "this is where the box ends"; a fade reads as "there is more
+     underneath this," which is the whole point here: nothing else on this
+     box hints that it scrolls at all — no visible scrollbar on a phone,
+     no arrow, nothing — so the fade is the one cue a reader gets. Static
+     rather than tied to actual scroll position (CSS alone cannot see
+     that): it very occasionally fades the true last line too, once
+     scrolled all the way down, which is a small cost against every other
+     phone screen where the fade is telling the truth. `3rem`, not smaller
+     — measured against this face's own x-height, anything short of that
+     read as a stray shadow rather than a fade. */
   #about .about-bio {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+    mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
   }
 
   /* Contact's display type, one step down per element: the headline and the
