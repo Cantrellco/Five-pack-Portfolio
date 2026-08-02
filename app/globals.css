@@ -2341,7 +2341,7 @@ dd {
     padding-block: var(--sp-lg) var(--sp-xl);
   }
 
-  /* ---- the two viewport-fit screens ------------------------------------ */
+  /* ---- the one viewport-fit screen -------------------------------------- */
 
   /* `min-height`, not `height` with a clip: on current-generation phones
      (~360x640 and up, measured) the content fits and the screen is exactly
@@ -2349,8 +2349,14 @@ dd {
      SE, a landscape phone — the same screen runs a few lines past the fold
      and the page scrolls those lines rather than clipping copy off the
      bottom. That trade is deliberate: a hard `height` plus overflow clipping
-     would make the shortfall unreadable instead of merely scrollable. */
-  #about .section,
+     would make the shortfall unreadable instead of merely scrollable.
+
+     About used to share this lock with Contact, back when its phone bio was
+     a separate, shorter trim held to this same budget. It now renders the
+     same paragraphs as desktop (see `aboutBio` in content/profile.ts), which
+     routinely runs taller than one viewport, so it opts out here and falls
+     back to `.deck-content .section`'s ordinary padding — an ordinary
+     scrolling panel, same as Work. */
   #contact .section {
     min-height: 100svh;
     display: flex;
@@ -2358,12 +2364,19 @@ dd {
     padding-block: var(--sp-md) 0;
   }
 
-  #about .shell,
   #contact .shell {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /* About's own corner-plate no longer sits in a flex column that could pin
+     it to the floor with `margin-top: auto` (see `.corner-plate` below) — it
+     is back in normal block flow, so it needs an explicit gap above it
+     instead of an implicit one. */
+  #about .corner-plate {
+    margin-top: var(--sp-xl);
   }
 
   /* Contact's display type, one step down per element: the headline and the
@@ -2574,10 +2587,10 @@ dd {
 }
 
 /* ---------------------------------------------------------------- tall phones
-   About and Contact force `min-height: 100svh` and pin `.corner-plate` to the
-   floor with `margin-top: auto` — the intro holds the top, the plate holds the
+   Contact forces `min-height: 100svh` and pins `.corner-plate` to the floor
+   with `margin-top: auto` — the intro holds the top, the plate holds the
    bottom, and whatever is left over is the gap between them. That gap is not a
-   constant: the comment on those rules sizes the screen against "~360x640 and
+   constant: the comment on that rule sizes the screen against "~360x640 and
    up", and a 640px-tall viewport has almost nothing spare. A current phone is
    850-950 CSS px tall, where the same content leaves 350-450px of empty paper
    in the middle of the screen.
@@ -2585,11 +2598,11 @@ dd {
    The composition does not change — intro at the top, plate on the floor. The
    room goes to two things instead of to nothing.
 
-   CONTENT first. Both screens have a paragraph they were withholding from the
-   phone: About's client work, and Contact's live GitHub figures, which were
-   `hidden lg:block` and are the most checkable claim the site makes. A reader
-   deciding whether to write is on Contact; giving that reader empty paper and
-   keeping the evidence for desktop is the wrong way round.
+   CONTENT first. Contact has a paragraph it was withholding from the phone:
+   the live GitHub figures, which were `hidden lg:block` and are the most
+   checkable claim the site makes. A reader deciding whether to write is on
+   Contact; giving that reader empty paper and keeping the evidence for
+   desktop is the wrong way round.
 
    Then the PLATE takes what is still spare: the engraving grows and the marks
    and their touch boxes grow with it, so the remainder goes to the one asset
@@ -2628,11 +2641,12 @@ dd {
    they render what they rendered before this block existed, which is a
    complete screen, not a broken one.
 
-   About no longer has anything gated here — its phone bio is two paragraphs
-   at every size now, held to a budget measured against the shortest phone
-   rather than to whatever a tall one leaves spare (see `aboutPhone` in
-   content/profile.ts). Contact keeps its figures, which is what the numbers
-   above were measured against.
+   About was here once too, on a two-paragraph phone-only trim held to this
+   same tall-phone gate. It renders the full desktop `aboutBio` at every size
+   now (see content/profile.ts) and scrolls when that runs past one viewport,
+   so it no longer needs a spare-room query — see the "one viewport-fit
+   screen" note further up this file. Contact keeps its figures, which is
+   what the numbers above were measured against.
 -------------------------------------------------------------------------- */
 
 /* Hidden by default, so the short phone is the base case and the tall one is

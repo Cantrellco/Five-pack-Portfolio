@@ -58,53 +58,28 @@ export function About() {
             sentence twice in a row on a phone. */}
         <p className="display-1 max-w-none hidden lg:block">{profile.roleLine}</p>
 
-        {/* The phone screen's whole top-left: role line as the claim, then the
-            one-line "who". The full bio stays a desktop read — this screen is
-            sized to fit one viewport with the face and the marks below it, and
-            the full bio does not fit that contract. No `data-reveal` for the
-            same LCP reason as the desktop role line above. */}
+        {/* The phone screen's role line only now — the bio below is shared
+            with desktop instead of a separate phone-sized trim. No
+            `data-reveal` for the same LCP reason as the desktop role line
+            above. */}
         <div className="lg:hidden">
           <p className="display-2 max-w-[24ch]">{profile.roleLine}</p>
-
-          {/* The fast bio: who he is, then what outranks the work. Same
-              no-`data-reveal` rule as everything else on this first screen —
-              nothing here may wait on the motion bundle.
-
-              The two are set differently on purpose. The first is the one
-              sentence a phone reader has to get, so it takes the body default
-              — `--fs-base` on `--ink`, inherited from `body`, no size or
-              colour class at all. It used to be `text-sm text-graphite`:
-              smaller and lower-contrast than this site's own body copy, on the
-              line deciding whether a reader keeps going. The second genuinely
-              is secondary to the pitch, so it keeps the quieter voice and the
-              hierarchy is real instead of one flat grey block.
-
-              `38ch` rather than `--measure`: that token is 34rem, which no
-              phone viewport ever reaches, so the cap only does anything on
-              the wide end of this breakpoint — a tablet in portrait, where
-              unbounded body copy would otherwise run to a 900px line.
-
-              Two paragraphs, not three. A third — evidence about the client
-              work — used to render here behind a height-scoped rule, on the
-              theory that a tall phone had room going spare. It did, but the
-              screen is a fixed viewport and every paragraph added to it is
-              measured against a hard budget rather than against how much
-              paper looks empty. See the note on `aboutPhone` for the numbers
-              these two are held to. */}
-          <p className="mt-[var(--sp-sm)] max-w-[38ch]">{profile.aboutPhone.lead}</p>
-
-          <p className="mt-[var(--sp-sm)] max-w-[38ch] text-sm text-graphite">
-            {profile.aboutPhone.personal}
-          </p>
         </div>
 
         {/* `sp-sm`, not `sp-lg`: this block used to open with an h2 that owned
             the gap under the role line, and `sp-lg` was sized to sit above
             that heading's own line-height. The heading and its line-height
-            are both gone now — this is the only gap between the display-1
-            role line and the bio, so it takes the tighter value the missing
-            heading no longer needs. */}
-        <div className="body-copy mt-[var(--sp-sm)] hidden lg:block">
+            are both gone now — this is the only gap between the role line
+            and the bio, so it takes the tighter value the missing heading no
+            longer needs.
+
+            No `hidden lg:block` any more: the phone screen used to carry its
+            own shorter trim of this copy, sized to a fixed one-viewport
+            budget. It now renders the same paragraphs as desktop and scrolls
+            below `lg` like every other panel — see the "two viewport-fit
+            screens" note in globals.css. One `body-copy` block, one piece of
+            copy, both breakpoints. */}
+        <div className="body-copy mt-[var(--sp-sm)]">
           {profile.aboutBio.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}

@@ -48,33 +48,15 @@ export const profile = {
   summary:
     'Self-taught full-stack engineer and AI developer in Southern Illinois. I design, build, ship, and maintain products end to end — native iOS and watchOS, React Native, Postgres, and the AI systems running inside them.',
 
-  /** The phone About screen's bio: who he is, then what outranks the work.
-   *  The desktop `aboutBio` below is a longer read this screen has no room
-   *  for — `#about .section` is a fixed one-viewport screen on phones (see
-   *  globals.css), with the engraving pinned to its floor, so the copy has a
-   *  hard height budget and going over does not clip, it pushes the portrait
-   *  and the marks below the fold.
+  /** The About panel's bio, in order — shared verbatim between the phone and
+   *  desktop layouts. No heading above it: the panel's own "About" kicker is
+   *  the heading, and a second one over the prose only restated what the
+   *  first paragraph already says in the reader's voice.
    *
-   *  MEASURED, because that budget is easy to blow past by accident. These
-   *  two paragraphs leave `#about .section` inside the viewport at 360x640,
-   *  375x667, 375x812, 390x844, 393x852, 412x915 and 430x932, and 19px over
-   *  at 320x640 — a screen that already runs 44px over regardless. The two
-   *  middle paragraphs they were drafted with ("intuitive, polished and
-   *  thoughtfully crafted", "the smallest details make the biggest
-   *  difference") cost another 145px and 142px and put every phone from
-   *  70px to 439px past the fold, which is why they are not here.
-   *
-   *  Re-measure if either string grows. A sentence is roughly 25px a line at
-   *  this width. */
-  aboutPhone: {
-    lead: "I'm Cody Cantrell, a self-taught software developer focused on creating software that feels as good as it functions.",
-    personal:
-      "Outside of development, my faith in Jesus, my wife Gracie, and our son Shepherd are at the center of my life. When I'm away from the keyboard, you'll usually find me staying active or planning our next Disney World trip.",
-  },
-
-  /** The About panel's bio, in order. No heading above it: the panel's own
-   *  "About" kicker is the heading, and a second one over the prose only
-   *  restated what the first paragraph already says in the reader's voice. */
+   *  The phone screen used to carry its own two-paragraph trim, held to a
+   *  hard height budget so `#about .section` never scrolled. It now renders
+   *  this same array and scrolls like every other panel below `lg` — see the
+   *  "two viewport-fit screens" note in globals.css. */
   aboutBio: [
     "I'm Cody Cantrell, a self-taught software developer with a passion for creating software that feels as good as it functions.",
     "I enjoy building apps and websites that are intuitive, visually polished, and thoughtfully crafted. Whether I'm developing an iOS app, designing a website for a local business, or learning a new technology, I'm always looking for ways to create experiences that feel effortless to use. I believe great software is more than just functional—it should be fast, refined, and something people genuinely enjoy coming back to.",
