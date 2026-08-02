@@ -966,7 +966,20 @@ dd {
   /* A square, and only the glyph: three hairline bars that fold into a
      close mark when the menu opens. The word "Menu" moved into the
      accessible name (`aria-label` on the summary) — the icon is the whole
-     visual control. */
+     visual control.
+
+     `--paper-2`, not `--paper`: this control sits directly over the page
+     canvas (which IS `--paper`), and a control filled with the same colour
+     as the thing behind it reads as flat rather than as an object floating
+     above it — it only held together at all here because of the border.
+     `--paper-2` is the token this system already uses for exactly that
+     "recessed panel" distinction (see `.skill-orb-circle`), so this borrows
+     rather than invents. `--graphite`, not `--rule`: `--rule` is reserved
+     for hairlines inside a block of content (see the comment on `.rule-top`
+     /`.rule-bottom`), not for framing a piece of chrome against the busy,
+     dotted field behind it — `.work-tile`'s resting border is the same
+     `--graphite` weight for the same reason, a control surface needs more
+     definition than a content divider does. */
   .mobile-menu-button {
     /* `list-style: none` plus the -webkit rule below is what removes the
        disclosure triangle everywhere. */
@@ -977,8 +990,8 @@ dd {
     width: 2.75rem;
     height: 2.75rem;
     color: var(--ink);
-    background-color: var(--paper);
-    border: 1px solid var(--rule);
+    background-color: var(--paper-2);
+    border: 1px solid var(--graphite);
     cursor: pointer;
     user-select: none;
   }
@@ -1020,6 +1033,8 @@ dd {
     transform: translateY(-7px) rotate(-45deg);
   }
 
+  /* Same surface as the button above, for the same reason: a plane of its
+     own instead of the page's own colour with a hairline round it. */
   .mobile-menu-list {
     position: absolute;
     top: calc(100% + 0.4rem);
@@ -1027,8 +1042,25 @@ dd {
     min-width: 11rem;
     display: flex;
     flex-direction: column;
-    background-color: var(--paper);
-    border: 1px solid var(--rule);
+    background-color: var(--paper-2);
+    border: 1px solid var(--graphite);
+  }
+
+  /* The same mono-free, uppercase eyebrow every panel opens with (see
+     `.label` / `.kicker` on the "About" / "Work" headings) — the menu gets
+     one too, so it reads as a labelled index rather than a bare list.
+     `aria-hidden`: the `<nav>` already has its accessible name from
+     `aria-label="Sections"` above; a second, visible "Sections" would
+     announce twice. Its own hairline is the ONE divider in this control —
+     it separates the label from the items it labels, which is a real
+     boundary; the items below it no longer get a rule each (see
+     `.mobile-menu-item`), because four rows of hairlines under one one
+     another was reading as a spreadsheet, not a menu. */
+  .mobile-menu-kicker {
+    display: block;
+    padding: var(--sp-2xs) var(--sp-sm) var(--sp-3xs);
+    text-align: right;
+    border-bottom: 1px solid var(--rule);
   }
 
   /* The list drops in as one plane and the items settle a beat behind it —
@@ -1047,45 +1079,69 @@ dd {
     animation: mobile-menu-item var(--motion-base) var(--motion-ease) backwards;
   }
 
-  .js .mobile-menu[open] .mobile-menu-item:nth-child(1) {
+  /* Offset by one child: the kicker above now occupies position 1, so the
+     first `.mobile-menu-item` is position 2. */
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(2) {
     animation-delay: 40ms;
   }
 
-  .js .mobile-menu[open] .mobile-menu-item:nth-child(2) {
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(3) {
     animation-delay: 80ms;
   }
 
-  .js .mobile-menu[open] .mobile-menu-item:nth-child(3) {
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(4) {
     animation-delay: 120ms;
   }
 
-  .js .mobile-menu[open] .mobile-menu-item:nth-child(4) {
+  .js .mobile-menu[open] .mobile-menu-item:nth-child(5) {
     animation-delay: 160ms;
   }
 
+  /* No border of its own any more — the kicker's hairline above is the only
+     divider in the box (see `.mobile-menu-kicker`). Padding is in `--sp-*`
+     tokens rather than `em` so its right edge lines up exactly with the
+     kicker's, which is padded the same way. */
   .mobile-menu-item {
     appearance: none;
-    background: none;
+    background-color: transparent;
     border: 0;
-    border-bottom: 1px solid var(--rule);
-    padding: 0.8em 1em;
+    padding: var(--sp-xs) var(--sp-sm);
     font-family: var(--ff-body);
     font-size: var(--fs-sm);
     font-weight: 500;
     text-align: right;
     color: var(--graphite);
     cursor: pointer;
+    transition:
+      color var(--motion-fast) var(--motion-ease),
+      background-color var(--motion-fast) var(--motion-ease);
   }
 
-  .mobile-menu-item:last-child {
-    border-bottom: 0;
+  /* A tap (or a hover, from a trackpad/mouse on a touch-capable laptop) got
+     no feedback before beyond the cursor — the row just sat there. The tint
+     is `color-mix(..., transparent)` against `--signal`, the same device
+     `.work-dialog::backdrop` uses to blend a token against nothing rather
+     than hand-picking a translucent colour. Kept faint (8%, 16% held) so the
+     "one rare accent" rule still holds — this reads as a wash, not a fill. */
+  .mobile-menu-item:hover,
+  .mobile-menu-item:focus-visible {
+    color: var(--ink);
+    background-color: color-mix(in srgb, var(--signal) 8%, transparent);
+  }
+
+  .mobile-menu-item:active {
+    background-color: color-mix(in srgb, var(--signal) 16%, transparent);
   }
 
   /* The open section is named by the signal hairline on the item's right
-     edge — an inset shadow rather than a border, so nothing shifts. Colour
-     alone never carries it: enhanced items also carry `aria-current`. */
+     edge — an inset shadow rather than a border, so nothing shifts — plus
+     the same faint wash `:hover` uses, so "this is where you are" and "this
+     is what you're about to tap" read as one family instead of two unrelated
+     treatments. Colour alone never carries it: enhanced items also carry
+     `aria-current`. */
   .mobile-menu-item[aria-current='true'] {
     color: var(--ink);
+    background-color: color-mix(in srgb, var(--signal) 6%, transparent);
     box-shadow: inset -2px 0 0 var(--signal);
   }
 }

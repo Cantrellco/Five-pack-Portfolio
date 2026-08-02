@@ -76,6 +76,14 @@ export function MobileMenu() {
         </span>
       </summary>
       <nav aria-label="Sections" className="mobile-menu-list">
+        {/* Decorative only — the nav's own `aria-label` above already gives
+            screen readers the name "Sections"; this is the same visible
+            eyebrow every panel opens with (see `.label` in globals.css),
+            here so the menu reads as a labelled index rather than a bare
+            list of buttons. */}
+        <span className="label mobile-menu-kicker" aria-hidden="true">
+          Sections
+        </span>
         {NAV.map((item) =>
           enhanced ? (
             <button
