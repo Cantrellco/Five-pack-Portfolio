@@ -139,7 +139,7 @@ void main() {
 
   // Heavier sets draw slightly bigger and darker; the lift index nudges size so
   // the eight bands do not read as one uniform texture. The calm profile ships
-  // a quarter of the points and takes only a small size bump in return -- the
+  // an eighth of the points and takes only a small size bump in return -- the
   // point of thinning is a quieter field, not the same tone in fewer marks.
   float size = (0.85 + volume * 1.5 + mod(lift, 2.0) * 0.12) * uPixelRatio;
   gl_PointSize = size * (1.0 + uCalm * 0.2) * alive * reveal;

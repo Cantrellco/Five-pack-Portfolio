@@ -51,9 +51,9 @@ export default function FieldCanvas({
     };
     canvas.addEventListener('webglcontextlost', onContextLost);
 
-    // Below the two-pane breakpoint the field runs calm: a quarter of the
+    // Below the two-pane breakpoint the field runs calm: an eighth of the
     // points, and the renderer swaps the pointer tug for its own slow wander.
-    loadField(controller.signal, calm ? 4 : 1)
+    loadField(controller.signal, calm ? 8 : 1)
       .then((data) => {
         if (controller.signal.aborted) return;
         renderer = createFieldRenderer(canvas, data, calm, runIntro);
