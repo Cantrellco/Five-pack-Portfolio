@@ -45,12 +45,20 @@ export const flagship = {
 
   role: 'I designed it, built it, shipped it, and I am the only person who maintains it. Roadmap, App Store review, crash triage, support email.',
 
+  /**
+   * The number the `tests` decision below earns, hoisted to the top of the
+   * case study so a skim meets it. Must stay in sync with that entry's
+   * `choice` string — this is the same fact stated twice on purpose (headline
+   * and explanation), never two separate claims that could drift apart.
+   */
+  testStat: '93 native Swift tests · about 4 seconds · no simulator',
+
   /** Native depth. The part a web developer could not have built. */
   nativeDepth: [
     {
       name: 'watchOS app',
       detail:
-        'SwiftUI, driven by a pure workout state machine. A real HKWorkoutSession with pause and resume; live, average and max heart rate and active calories round-trip into phone history. Starts standalone.',
+        'SwiftUI, driven by a pure workout state machine, with a real HKWorkoutSession — pause, resume, heart rate, calories — that round-trips into phone history. Starts standalone.',
     },
     {
       name: 'Live Activities',
@@ -70,7 +78,7 @@ export const flagship = {
     {
       name: 'HealthKit',
       detail:
-        'Workouts, heart rate, bodyweight and steps. Phone workouts write back to Apple Health with cross-device dedupe against the watch’s own save.',
+        'Workouts, heart rate, bodyweight and steps — phone workouts write back to Apple Health with cross-device dedupe against the watch’s own save.',
     },
     {
       name: 'Native bridges',
@@ -113,44 +121,28 @@ export const flagship = {
 
   decisions: [
     {
-      id: 'timer',
-      title: 'The rest timer does not tick from the app',
-      choice:
-        'The Live Activity renders its countdown with a system timer interval, so the Lock Screen stays accurate. I spend the update budget only on state changes — set finished, rest started, session ended.',
-      tradeoff:
-        'I gave up control of the countdown formatting and cannot easily show anything but elapsed or remaining time. In exchange the timer never drifts, never goes stale, and never gets throttled out mid-set.',
-    },
-    {
       id: 'suspended',
       title: 'The Lock Screen can log a set while the app is suspended',
       choice:
-        'The interactive Log set button writes into an App Group queue and raises a Darwin notification rather than waking the JavaScript runtime. The app drains the queue when it next runs, so the tap is durable whether or not anything is alive to receive it.',
+        'The interactive Log set button writes into an App Group queue and raises a Darwin notification instead of waking the JS runtime — the app drains the queue next time it runs, so the tap survives whether anything is alive to receive it.',
       tradeoff:
-        'Two writers now touch the same workout, which is the whole reason the queue and its drain order had to be designed rather than assumed. The payoff is a button that is honest: it works when the app is gone, and it says so when a set genuinely needs typed numbers first.',
+        'Two writers now touch the same workout, so the drain order has to be designed, not assumed — the payoff is a button that works even when the app is gone.',
     },
     {
       id: 'coach',
       title: 'The AI coach proposes; the app decides',
       choice:
-        'The chat coach never writes to the program. It returns a proposed change, the app validates it against its own rules, and only then applies it. Requests go through a server-side proxy with a hard per-user dollar budget enforced atomically.',
+        'The chat coach never writes to the program directly — it returns a proposed change, the app validates it against its own rules, and only then applies it, through a server-side proxy with a hard per-user dollar budget.',
       tradeoff:
-        'Coaching needs a network and costs money per user, so it can never be the only way to train — everything it suggests has to be reachable by hand too. What it buys is that a bad generation is a rejected proposal rather than a corrupted mesocycle, and that one user cannot run up my bill.',
-    },
-    {
-      id: 'offline',
-      title: 'Offline is the default, not a fallback',
-      choice:
-        'Every write lands in local state first and joins a persistent queue that syncs to Supabase with backoff and poison-entry rotation. Nothing in the logging path waits on a request.',
-      tradeoff:
-        'I maintain a queue, its retry policy and its failure modes instead of letting a client library own them. But the app works the same in a gym basement as it does on wifi, and one permanently bad row cannot wedge the sync forever.',
+        'Every AI-suggested change has to be reachable by hand too, but the validation layer means a rejected proposal never becomes a corrupted mesocycle.',
     },
     {
       id: 'tests',
       title: 'The native code is testable without a simulator',
       choice:
-        'A root Package.swift compiles the pure Swift — the watch state machine and its friends — on macOS. `swift test` runs 93 native tests in about four seconds.',
+        'A root Package.swift compiles the pure Swift — the watch state machine and its friends — on macOS, where `swift test` runs 93 native tests in about four seconds.',
       tradeoff:
-        'The pure logic has to stay genuinely free of UIKit and WatchKit for this to keep working, which is a constraint on where code is allowed to live. It also means CI can check the hardest part of the app in seconds.',
+        'The logic has to stay genuinely free of UIKit and WatchKit — in exchange, CI checks the hardest part of the app in seconds.',
     },
   ] as const satisfies readonly TechDecision[],
 
@@ -160,15 +152,7 @@ export const flagship = {
     // it. If the real war story differs, replace it — do not leave a version
     // that is merely plausible.
     body: [
-      'Keeping one workout consistent across four processes that do not share memory. The phone app, the watch, a widget and a Live Activity can all believe they know the current set, and the Live Activity’s Log set button can fire when the app is not running at all.',
-      'The answer was to stop treating the app as the owner of the session. Surfaces append into an App Group queue; a drain step folds them into state in a defined order. What made it hard was not the merge — it was accepting that the surfaces could not simply call into the app, because most of the time there is no app there to call.',
-    ],
-  },
-
-  refactor: {
-    title: 'What I would refactor',
-    body: [
-      'The progression rules exist as one pure, tested module, and that is the part I trust. What I would go back for is the boundary around it: too much of the app still reaches for raw workout rows when it wants a derived number, so a rule change means auditing call sites rather than changing one function. It works because the module is right, not because the design stops the rest of the app from working around it.',
+      'Keeping one workout consistent across four processes that share no memory — phone, watch, widget and Live Activity can each believe they know the current set, and the Log set button can fire when the app is not running at all. The fix was to stop treating the app as the owner: surfaces append into an App Group queue, and a drain step folds them into state in a defined order.',
     ],
   },
 

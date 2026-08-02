@@ -9,6 +9,7 @@ export function Contact({ github }: { github: GithubSummary | null }) {
   // rather than rendered as a dead anchor.
   const links: Array<{ href: string; label: string }> = [
     { href: profile.github, label: 'GitHub' },
+    { href: profile.instagram, label: 'Instagram' },
     ...(profile.linkedin ? [{ href: profile.linkedin, label: 'LinkedIn' }] : []),
     ...(profile.resume ? [{ href: profile.resume, label: 'Résumé (PDF)' }] : []),
   ];
@@ -75,8 +76,21 @@ export function Contact({ github }: { github: GithubSummary | null }) {
           ))}
         </ul>
 
+        {/* Live GitHub figures, read at build time and refreshed daily.
+            This was `hidden lg:block` — desktop only — while the phone's
+            Contact screen, a forced one-viewport screen with a headline, an
+            address and one line of note on it, spent the rest of that viewport
+            on empty paper. On a tall phone that was 500-600px of nothing sat
+            directly under the one screen a reader lands on to decide whether
+            to write. The figures are the most checkable thing on the page, so
+            that is what the room goes to.
+
+            Still hidden on a SHORT phone, and that is the whole reason this is
+            a class rather than a utility: the rule is height-scoped in
+            globals.css, so the one-viewport contract holds on an SE while a
+            current phone gets the block. See `.contact-activity`. */}
         {github ? (
-          <div className="hidden lg:block">
+          <div className="contact-activity">
             <Block label="Activity">
               <dl className="grid grid-cols-1 border-t border-rule sm:grid-cols-3" data-reveal>
                 <div className="border-b border-rule py-[var(--sp-sm)] sm:border-b-0 sm:pr-[var(--sp-md)]">
@@ -99,6 +113,18 @@ export function Contact({ github }: { github: GithubSummary | null }) {
                   </div>
                 ) : null}
               </dl>
+
+              {/* The stat block is read as a claim about what he writes, and
+                  on its own it argues against the case studies: Workout Buddy
+                  is the largest thing on this site and its repo is private
+                  (`flagship.repoUrl` is deliberately blank), so the Swift
+                  share here counts none of it. Saying so converts a number
+                  that undersells the native work into one a reader can place
+                  — and the site's own rule is that a figure never gets to
+                  imply something the data does not support. */}
+              <p className="mt-[var(--sp-sm)] text-sm text-graphite" data-reveal>
+                {profile.activityNote}
+              </p>
             </Block>
           </div>
         ) : null}

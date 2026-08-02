@@ -5,6 +5,13 @@
  * loop, so pushing these values through React state would re-render a
  * component tree sixty times a second to change two floats.
  */
+/**
+ * Which presentation of the field the visitor actually has right now.
+ * Written by FieldMount so anything that asks — a subscriber, or DevTools
+ * via __inkField — sees this visit truthfully instead of the ideal one.
+ */
+export type FieldTier = 'static' | 'full' | 'calm';
+
 export const fieldState = {
   /** Normalised pointer, -1..1. Driven by mouse move and by touch drag alike;
    *  eases back to the origin once a touch lifts. */
@@ -12,7 +19,32 @@ export const fieldState = {
   pointerY: 0,
   /** False when the tab is hidden — the render loop parks itself. */
   visible: true,
+  /** The presentation this visit ended up with. 'static' until the canvas
+   *  reports itself live, which is also the truth of the server render. */
+  tier: 'static' as FieldTier,
 };
+
+/* The tier gets a store interface as well: the render loop keeps its plain
+   mutable reads, and any component that cares can subscribe
+   (useSyncExternalStore) instead of polling a mutable object it could never
+   be notified about. */
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((listener) => listener());
+
+export function subscribeFieldPresentation(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export const getFieldTier = (): FieldTier => fieldState.tier;
+
+export function setFieldTier(tier: FieldTier): void {
+  if (fieldState.tier === tier) return;
+  fieldState.tier = tier;
+  emit();
+}
 
 declare global {
   interface Window {

@@ -26,7 +26,19 @@ export function CopyEmail({ email }: { email: string }) {
   return (
     <button
       type="button"
-      className="mono text-graphite transition-colors hover:text-ink"
+      /* A real 44x44 touch box. Tailwind's preflight zeroes button padding, so
+         this rendered as a bare `.mono` text node — about 40x18 at `--fs-2xs`,
+         under every touch-target guideline there is, sitting a `--sp-sm` gap
+         from the display-sized mailto link. That is the one control a reader
+         who wants to make contact reaches for on a phone.
+
+         `inline-flex` with the label centred rather than padding plus a
+         cancelling negative margin: the parent row is `items-baseline`, and a
+         flex container takes its baseline from its first item — so the label
+         still sits on the email address's baseline exactly as before while the
+         box grows symmetrically around it. The button has no fill and no
+         border, so a bigger box is invisible; only the tappable area changes. */
+      className="mono inline-flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center text-graphite transition-colors hover:text-ink"
       onClick={() => {
         navigator.clipboard.writeText(email).then(
           () => {

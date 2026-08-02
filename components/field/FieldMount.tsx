@@ -2,11 +2,49 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
+import { setFieldTier } from '@/lib/field-state';
 
 // The renderer lives behind this boundary. Nothing here is requested until
 // `enabled` flips, which happens after load and during idle time — so the
 // canvas cannot compete with first paint or with becoming interactive.
 const FieldCanvas = dynamic(() => import('./FieldCanvas'), { ssr: false });
+
+/**
+ * First visit or not, asked once per page load and memoised at module scope:
+ * StrictMode double-runs effects in dev, and the second run must not read
+ * the flag the first run just wrote. Reduced-motion visitors never reach
+ * this (canRunCanvas already keeps the canvas off), but the check is repeated
+ * here so the decision is safe on its own. Storage that throws — private-mode
+ * Safari — means no ceremony, which is the right failure: the field simply
+ * appears, exactly as it does on every return visit.
+ */
+const INTRO_KEY = 'field-intro-seen';
+let introDecision: boolean | null = null;
+function shouldRunIntro(): boolean {
+  if (introDecision === null) {
+    try {
+      if (
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        window.localStorage.getItem(INTRO_KEY) !== null
+      ) {
+        introDecision = false;
+      } else {
+        window.localStorage.setItem(INTRO_KEY, '1');
+        introDecision = true;
+      }
+    } catch {
+      introDecision = false;
+    }
+  }
+  return introDecision;
+}
+
+/* Once per page LOAD, not once per canvas: crossing the 64rem breakpoint
+   remounts FieldCanvas via `key`, and a remount that replayed the 2.2s
+   ink-down mid-session would blank the field just to redraw it. Latched the
+   moment a canvas reports ready and read at render time, so the next mount,
+   whatever caused it, arrives with the entrance already spent. */
+let introPlayed = false;
 
 /** Every reason not to run a canvas, asked once. */
 function canRunCanvas(): boolean {
@@ -56,6 +94,7 @@ const calmOnServer = () => false;
 export function FieldMount() {
   const [enabled, setEnabled] = useState(false);
   const [live, setLive] = useState(false);
+  const [intro, setIntro] = useState(false);
   const calm = useSyncExternalStore(subscribeCalm, calmNow, calmOnServer);
 
   useEffect(() => {
@@ -68,7 +107,12 @@ export function FieldMount() {
           ? window.requestIdleCallback
           : (cb: () => void) => window.setTimeout(cb, 200);
       idle(() => {
-        if (!cancelled) setEnabled(true);
+        if (!cancelled) {
+          // Decided here, at the same moment the canvas is allowed to exist,
+          // so the entrance and the canvas arrive as one thing.
+          setIntro(shouldRunIntro());
+          setEnabled(true);
+        }
       });
     };
 
@@ -84,10 +128,22 @@ export function FieldMount() {
   // Two frames after the data lands the canvas has painted, so the poster can
   // go without a gap.
   const onReady = useCallback(() => {
+    // However this canvas arrived, the entrance is spent for this page load —
+    // a later breakpoint remount cross-fades in, it does not replay the
+    // ceremony. (FieldCanvas snapshots the intro prop at mount, so flipping
+    // the flag here cannot disturb the canvas that is drawing it right now.)
+    introPlayed = true;
     requestAnimationFrame(() => requestAnimationFrame(() => setLive(true)));
   }, []);
 
   const onLost = useCallback(() => setLive(false), []);
+
+  // The truth of this visit, published to the field-state store. An effect,
+  // not a render-time write: the store must only change after commit, and
+  // 'static' — the initial value — is already correct until then.
+  useEffect(() => {
+    setFieldTier(live ? (calm ? 'calm' : 'full') : 'static');
+  }, [live, calm]);
 
   return (
     <div className="field-layer" aria-hidden="true">
@@ -103,7 +159,13 @@ export function FieldMount() {
         decoding="async"
       />
       {enabled ? (
-        <FieldCanvas key={calm ? 'calm' : 'full'} calm={calm} onReady={onReady} onLost={onLost} />
+        <FieldCanvas
+          key={calm ? 'calm' : 'full'}
+          calm={calm}
+          intro={intro && !introPlayed}
+          onReady={onReady}
+          onLost={onLost}
+        />
       ) : null}
     </div>
   );

@@ -1,0 +1,4 @@
+Contact: mailto:cantrellco.13@gmail.com
+Expires: 2027-08-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://codycantrell.dev/.well-known/security.txt

@@ -1,0 +1,58 @@
+name: refresh field
+
+# Pulls the real Workout Buddy export weekly and rebuilds the field from it.
+# Until the TRAINING_EXPORT_URL secret is set, data:pull skips (exit 0), the
+# rebuild reproduces the committed artefacts byte for byte, and the run is a
+# clean no-op — nothing is committed, nothing changes.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Monday 06:17 UTC — off the top of the hour
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: pull export · rebuild field
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run data:pull
+        env:
+          TRAINING_EXPORT_URL: ${{ secrets.TRAINING_EXPORT_URL }}
+          TRAINING_EXPORT_TOKEN: ${{ secrets.TRAINING_EXPORT_TOKEN }}
+      - run: npm run data
+
+      # The gate runs HERE because it will not run anywhere else: the commit
+      # below is pushed with the default GITHUB_TOKEN, and pushes made with
+      # GITHUB_TOKEN never trigger `on: push` workflows — ci.yml would never
+      # see the refreshed data. A schema-valid but pathological export must
+      # fail this job, not land on main unchecked. (test:e2e builds the site
+      # itself via Playwright's webServer; the explicit build first keeps a
+      # build failure legible as one.)
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+      # The field artefacts (public/field/*, lib/generated/*) are committed
+      # outputs of data/training.json, so they land in the same commit — the
+      # repo never holds data that disagrees with the field drawn from it.
+      - name: commit the refreshed data
+        run: |
+          if git diff --quiet -- data/training.json; then
+            echo "training data unchanged — nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/training.json public/field lib/generated
+          git commit -m "Refresh the field from the latest training export"
+          git push

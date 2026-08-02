@@ -37,12 +37,39 @@ export function WorkGrid() {
     <>
       <p className="label kicker">Projects</p>
 
+      {/* Every other panel opens kicker-then-headline before any content —
+          About with the role line, Resume and Contact through `SectionHeader`.
+          This one opened on the kicker and went straight into the tile grid,
+          which on a phone (where the panels are read one screen at a time)
+          made Work the one screen with no headline on it: a visible drop in
+          finish, on the screen showing the actual work.
+
+          A plain `h2` rather than `SectionHeader`, and deliberately without
+          `data-reveal`: nothing under `components/work/` carries that
+          attribute. A revealed element starts at `opacity: 0` and waits on the
+          motion bundle, and this panel spends most of its life behind
+          `hidden` — an element that is revealed while its panel is hidden has
+          no reliable moment to be observed intersecting.
+
+          "Built", not "shipped". Every one of the six was built; the site does
+          not have a ship date on record for all six, and this heading is not
+          the place to imply one.
+
+          No top margin — `.kicker` already carries the gap above it. The
+          bottom margin is the one the grid needs and does not have:
+          `.work-grid` sets padding, not margin, so without this the tiles
+          would start immediately under the headline's descenders. Matches
+          the grid's own `--sp-sm` gap rather than `--sp-md`, so the space
+          above the tiles reads the same as the space between them. */}
+      <h2 className="display-2 mb-[var(--sp-sm)]">What I have built</h2>
+
       <div className="work-grid">
         {WORK_TABS.map((tab) => (
           <a
             key={tab.id}
             href={`#${tab.id}`}
             className="work-tile"
+            data-tone={tab.tone}
             aria-haspopup={enhanced ? 'dialog' : undefined}
             onClick={(event) => onClick(event, tab.id)}
           >
@@ -58,7 +85,16 @@ export function WorkGrid() {
                 {tab.label}
               </span>
             </span>
-            <span className="work-tile-kind label">{tab.kind}</span>
+            {/* The kind tag, in its own row. There was a second span here — a
+                "Flagship" word in the accent, on the Workout Buddy tile alone.
+                It is gone: six tiles that all carry the same weight is the
+                grid's whole rule, and a word singling one of them out argued
+                against it. Which project the case studies lead with is the
+                case studies' business, not the index's. The row wrapper stays,
+                so the tag keeps its own line and the tiles keep their heights. */}
+            <span className="work-tile-tags">
+              <span className="work-tile-kind label">{tab.kind}</span>
+            </span>
             <span className="work-tile-summary">{tab.summary}</span>
           </a>
         ))}

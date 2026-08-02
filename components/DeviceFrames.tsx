@@ -26,11 +26,22 @@ type Shot = { src: string; alt: string; label: string };
  * The inset box gets a matching corner radius and `overflow-hidden` of its
  * own so a screenshot's native (slightly darker) corner pixels get cropped
  * away rather than peeking out next to the frame's ink line.
+ *
+ * That radius is written as two percentages because one percentage would not
+ * be a circle. A single value resolves horizontally against the box's width
+ * and vertically against its height, so on a box this tall it draws an
+ * ellipse — `10%` was 107px across but 226px down, which over-rounded the
+ * bottom corners and opened a wedge of paper between the screenshot and the
+ * frame's own corner. Measured off the rendered SVG, the frame's screen
+ * corner is a circular ~143px radius at this box's 1203px reference width;
+ * `13.45% / 6.35%` restates that one radius against each axis. Both numbers
+ * depend on the `aspect-[1203/2417]` above and on the inset — change either
+ * and they have to be re-derived together.
  */
 function PhoneChrome({ src, alt, label, present, sizes }: Shot & { present: boolean; sizes: string }) {
   return (
     <div className="relative aspect-[1203/2417] overflow-hidden">
-      <div className="absolute inset-[3.6%_6%] overflow-hidden rounded-[10%] bg-paper-2">
+      <div className="absolute inset-[3.1%_5.5%_3.05%] overflow-hidden [border-radius:13.45%_/_6.35%] bg-paper-2">
         {present ? (
           <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" />
         ) : (

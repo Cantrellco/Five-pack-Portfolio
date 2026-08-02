@@ -105,3 +105,10 @@ export const skillGroups = [
 
 /** True while any resume row is still a placeholder. Drives the honest-copy switch. */
 export const resumeIsPlaceholder = roles.some((r) => r.placeholder);
+
+/**
+ * Label for the client-only print control (`components/PrintButton.tsx`).
+ * The `@media print` block in globals.css is the actual typesetting — the
+ * button only calls `window.print()`.
+ */
+export const printLabel = 'Print or save as PDF';

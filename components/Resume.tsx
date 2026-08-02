@@ -1,3 +1,4 @@
+import { PrintButton } from '@/components/PrintButton';
 import { SectionHeader } from '@/components/SectionHeader';
 import { profile } from '@/content/profile';
 import { resumeIsPlaceholder, roles, skillGroups } from '@/content/resume';
@@ -15,6 +16,30 @@ import { resumeIsPlaceholder, roles, skillGroups } from '@/content/resume';
  * section says so in plain text instead of presenting drafts as fact — the
  * same rule the field copy follows about the training data.
  */
+
+/**
+ * Several bullets are written as "Project name: what it was" — a lead-in and
+ * its explanation. Rendered as one flat span the lead-in is invisible, so the
+ * whole timeline reads as a wall of graphite with no way to scan it for the
+ * names. This splits that pattern so the name can carry ink weight while the
+ * explanation stays graphite.
+ *
+ * Deliberately conservative about what counts. The colon has to appear inside
+ * the first `MAX_LEAD` characters and have text on both sides — a colon that
+ * turns up mid-sentence ("the fix was this: ...") is prose, not a lead-in, and
+ * splitting on it would emphasise a fragment. Anything that does not match is
+ * returned whole and renders exactly as it always did.
+ */
+const MAX_LEAD = 40;
+
+function splitBullet(line: string): { lead: string; rest: string } | null {
+  const at = line.indexOf(':');
+  if (at < 1 || at > MAX_LEAD) return null;
+  const rest = line.slice(at + 1).trim();
+  if (!rest) return null;
+  return { lead: line.slice(0, at), rest };
+}
+
 export function Resume() {
   return (
     <div className="section">
@@ -53,12 +78,27 @@ export function Resume() {
             </p>
 
             <ul className="mt-[var(--sp-sm)] max-w-[var(--measure)] space-y-[var(--sp-2xs)]">
-              {role.bullets.map((line) => (
-                <li key={line} className="flex gap-[var(--sp-xs)]" data-reveal>
-                  <span aria-hidden="true" className="mt-[0.62em] h-px w-3 shrink-0 bg-rule" />
-                  <span>{line}</span>
-                </li>
-              ))}
+              {role.bullets.map((line) => {
+                const parts = splitBullet(line);
+                return (
+                  <li key={line} className="flex gap-[var(--sp-xs)]" data-reveal>
+                    <span aria-hidden="true" className="mt-[0.62em] h-px w-3 shrink-0 bg-rule" />
+                    {/* One text node either way — the lead-in is a `<span>`
+                        inside the same sentence, not a heading, so the line
+                        still reads and is announced as one continuous string. */}
+                    <span className={parts ? 'text-graphite' : undefined}>
+                      {parts ? (
+                        <>
+                          <span className="font-medium text-ink">{parts.lead}</span>
+                          {` — ${parts.rest}`}
+                        </>
+                      ) : (
+                        line
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </li>
         ))}
@@ -69,18 +109,28 @@ export function Resume() {
           What I work in
         </h3>
 
-        {/* Three columns at every width — the groups are short lists, and
-            side by side they read as one table of the stack rather than
-            three stacked lists a phone reader scrolls past. The phone drops
-            a type step and tightens the gap so all three fit 320px. */}
-        <dl className="grid grid-cols-3 gap-[var(--sp-xs)] sm:gap-[var(--sp-md)]">
+        {/* Three columns side by side read as one table of the stack rather
+            than as three stacked lists — but only where three columns of type
+            actually fit. This used to be `grid-cols-3` at every width, on the
+            claim that "the phone drops a type step and tightens the gap so all
+            three fit 320px". It does not: `sm:` is 640px, wider than any phone,
+            so neither responsive step here ever fired on the device the note
+            was written for. What a phone actually got was three ~85-90px lanes,
+            where `Row-level security`, `App Store release` and `Live
+            Activities` each wrap onto two or three lines — the ragged ladder
+            the one-line-per-item layout exists to avoid.
+
+            So: stacked below `sm`, the table above it. And with a full-width
+            column to sit in, the items no longer need the smaller step they
+            were shrunk to in order to fit those lanes. */}
+        <dl className="grid grid-cols-1 gap-[var(--sp-sm)] sm:grid-cols-3 sm:gap-[var(--sp-md)]">
           {skillGroups.map((group) => (
             <div key={group.label} data-reveal>
               <dt className="label">{group.label}</dt>
               <dd className="mt-[var(--sp-2xs)]">
                 <ul className="space-y-[var(--sp-3xs)]">
                   {group.items.map((item) => (
-                    <li key={item} className="text-xs sm:text-sm">
+                    <li key={item} className="text-sm">
                       {item}
                     </li>
                   ))}
@@ -97,6 +147,12 @@ export function Resume() {
             </a>
           </p>
         ) : null}
+
+        {/* Client-only, absent from the no-JS document entirely — and from
+            the printed page itself, where the print block hides every
+            button. What it prints is typeset by globals.css, not saved from
+            a hosted file, so it works while `profile.resume` is unset. */}
+        <PrintButton />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { profile } from '@/content/profile';
+import { consoleNote, sourceNote } from '@/content/source-note';
 import { personJsonLd } from '@/lib/jsonld';
 import './globals.css';
 
@@ -46,6 +47,28 @@ export const viewport: Viewport = {
 const JS_FLAG = `(function(){var d=document.documentElement;d.classList.add('js');
 setTimeout(function(){if(!d.classList.contains('reveal-ready'))d.classList.remove('js')},2500)})()`;
 
+/**
+ * The note a view-source reader finds at the top of <body>. JSX cannot emit a
+ * bare HTML comment, so a hidden div carries one via dangerouslySetInnerHTML:
+ * it never paints, and React never re-diffs innerHTML it set itself, so the
+ * cost is the bytes and nothing else. The words live in content/source-note.ts
+ * (the copy rule), which also carries the constraint that matters here: no
+ * `--` inside the text — a double hyphen would close the comment early.
+ */
+const SOURCE_NOTE = `<!--
+  ${sourceNote}
+-->`;
+
+/**
+ * One line for the console, and only one. Info-level on purpose: the e2e
+ * suite fails on errors and warnings and ignores everything else
+ * (e2e/smoke.spec.ts, watchConsole), and a portfolio that chats in the
+ * console has missed its own point. JSON.stringify is the escaping — the
+ * copy lives in content/source-note.ts and must arrive as one JS string
+ * literal regardless of what quotes it contains.
+ */
+const CONSOLE_NOTE = `console.info(${JSON.stringify(consoleNote)})`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     /* The script below adds `.js` to this element before React hydrates, so
@@ -66,6 +89,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: JS_FLAG }} />
       </head>
       <body>
+        <div hidden dangerouslySetInnerHTML={{ __html: SOURCE_NOTE }} />
         <a className="skip-link" href="#main">
           Skip to content
         </a>
@@ -74,6 +98,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd()) }}
         />
+        <script dangerouslySetInnerHTML={{ __html: CONSOLE_NOTE }} />
       </body>
     </html>
   );

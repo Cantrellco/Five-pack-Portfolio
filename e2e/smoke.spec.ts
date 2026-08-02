@@ -452,7 +452,10 @@ test.describe('with JavaScript disabled', () => {
     // is no tablist and nothing is hidden, so the count is the total across
     // all four panels — that is the assertion that the deck degrades to a
     // plain document rather than to three quarters of one.
-    await expect(page.getByRole('heading', { level: 2 })).toHaveCount(9);
+    // 10 since the Work panel took a headline of its own ("What I have built"
+    // in components/work/WorkGrid.tsx); it was 9 while that panel opened
+    // straight into the tile grid.
+    await expect(page.getByRole('heading', { level: 2 })).toHaveCount(10);
     await expect(page.locator('[data-panel]:not([hidden])')).toHaveCount(4);
     await expect(page.getByRole('tab')).toHaveCount(0);
 
@@ -605,5 +608,36 @@ test.describe('with reduced motion', () => {
     );
     expect(hidden).toBe(0);
     await expect(page.locator('.field-layer canvas')).toHaveCount(0);
+  });
+});
+
+test.describe('the 404 page', () => {
+  test('answers a wrong address with a real 404 and the way back', async ({ page }) => {
+    const response = await page.goto('/definitely-not-a-page');
+    expect(response?.status()).toBe(404);
+
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Nothing lives at this address.',
+    );
+    await expect(page.getByRole('link', { name: 'Back to the front page' })).toBeVisible();
+  });
+});
+
+test.describe('in print', () => {
+  test('the chrome disappears and the resume panel prints', async ({ page }) => {
+    await page.goto('/');
+    await page.emulateMedia({ media: 'print' });
+
+    // The field never prints; neither does the masthead or the panels that
+    // are not the letter — the print stylesheet is a resume, not a screenshot.
+    await expect(page.locator('.field-layer')).toBeHidden();
+    await expect(page.locator('header').first()).toBeHidden();
+    await expect(page.locator('#about')).toBeHidden();
+    await expect(page.locator('#work')).toBeHidden();
+
+    // The resume panel un-hides for print even though the deck left it
+    // `hidden` — that is the layered restore rule doing its one job.
+    await expect(page.locator('#resume')).toBeVisible();
+    await expect(page.locator('#contact')).toBeVisible();
   });
 });

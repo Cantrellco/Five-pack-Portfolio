@@ -17,5 +17,24 @@
   "images": {
     "binding": "IMAGES"
   },
+  "kv_namespaces": [
+    // OpenNext's incremental cache (open-next.config.ts) — this is what makes
+    // `next: { revalidate }` actually work on Workers. Created with
+    // `wrangler kv namespace create NEXT_INC_CACHE_KV`; `npm run preview`
+    // ignores the id (miniflare simulates KV locally), deploy requires it.
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "a8e7f27c1e0e40148bd1f44efd283918"
+    },
+    // The About panel's "now" line (components/NowLine.tsx). Created with
+    // `wrangler kv namespace create NOW`; set (and later refresh) the value:
+    //   wrangler kv key put --binding=NOW now '{"text":"...","date":"2026-08-01"}'
+    // The line renders nothing until a value exists, and drops itself once
+    // the date is more than 45 days old — so an unset or stale key is safe.
+    {
+      "binding": "NOW",
+      "id": "12acc8c9a4ed44dd95b10d2448fd8748"
+    }
+  ],
   "routes": [{ "pattern": "codycantrell.dev", "custom_domain": true }]
 }

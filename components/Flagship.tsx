@@ -9,6 +9,12 @@ import { flagship } from '@/content/projects';
  * the id the hash names, and the tab bar above it already draws the line.
  */
 export function Flagship() {
+  const links: Array<{ href: string; label: string }> = [
+    ...(flagship.appStoreUrl ? [{ href: flagship.appStoreUrl, label: 'Open in the App Store' }] : []),
+    ...(flagship.siteUrl ? [{ href: flagship.siteUrl, label: 'Visit the site' }] : []),
+    ...(flagship.repoUrl ? [{ href: flagship.repoUrl, label: 'Read the code on GitHub' }] : []),
+  ];
+
   return (
     <section className="section" aria-labelledby="workout-buddy-title">
       <div className="shell">
@@ -24,16 +30,15 @@ export function Flagship() {
             </>
           }
         >
-          <p className="mt-[var(--sp-md)] flex flex-wrap items-center gap-[var(--sp-2xs)]" data-reveal>
-            <a className="cta" href={flagship.appStoreUrl} rel="noopener">
-              Open in the App Store
-            </a>
-            {flagship.siteUrl ? (
-              <a className="cta-ghost" href={flagship.siteUrl} rel="noopener">
-                Visit the site
-              </a>
-            ) : null}
-          </p>
+          {links.length > 0 ? (
+            <p className="mt-[var(--sp-md)] flex flex-wrap gap-[var(--sp-sm)]" data-reveal>
+              {links.map((l) => (
+                <a key={l.href} className="link-block text-sm" href={l.href} rel="noopener">
+                  {l.label}
+                </a>
+              ))}
+            </p>
+          ) : null}
 
           <div className="body-copy mt-[var(--sp-md)]" data-reveal>
             {flagship.what.map((p) => (
@@ -44,7 +49,28 @@ export function Flagship() {
           <p className="body-copy mt-[var(--sp-sm)] text-graphite" data-reveal>
             {flagship.role}
           </p>
+
+          {/* The one citable engineering number on this page, stated where a
+              skim will actually meet it. It is the headline of the `tests`
+              decision below, not a second claim: that entry explains how the
+              number is possible (a root Package.swift, no simulator), this
+              line is the number itself. Mono because it is data. */}
+          <p className="mono mt-[var(--sp-sm)] text-graphite" data-reveal>
+            {flagship.testStat}
+          </p>
         </SectionHeader>
+
+        {/* Screens open the case study rather than close it. This is a shipped,
+            App Store-live product and the screenshots are the only proof of
+            that which survives a skim — behind "Native depth", "Architecture",
+            "Decisions" and "Honestly" they were four text sections deep, which
+            is three more than a first read gives them. The prose that explains
+            HOW it is built still follows in the same order it always did; only
+            the evidence moved ahead of it. */}
+        <Block label="Screens">
+          <PhoneFrameGrid shots={flagship.media.screenshots} sizes="(min-width: 768px) 22vw, 44vw" />
+          <DemoClip />
+        </Block>
 
         <Block label="Native depth">
           <dl className="grid grid-cols-1 border-t border-rule sm:grid-cols-2" data-reveal>
@@ -85,20 +111,6 @@ export function Flagship() {
               ))}
             </div>
           </div>
-
-          <div className="mt-[var(--sp-lg)]" data-reveal>
-            <h3 className="display-3">{flagship.refactor.title}</h3>
-            <div className="body-copy mt-[var(--sp-xs)]">
-              {flagship.refactor.body.map((p) => (
-                <p key={p}>{p}</p>
-              ))}
-            </div>
-          </div>
-        </Block>
-
-        <Block label="Screens">
-          <PhoneFrameGrid shots={flagship.media.screenshots} sizes="(min-width: 768px) 22vw, 44vw" />
-          <DemoClip />
         </Block>
       </div>
     </section>

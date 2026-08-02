@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "data": "node scripts/build-field-data.mjs",
+    "data:pull": "node scripts/pull-training.mjs",
     "data:static": "node scripts/build-static-assets.mjs",
     "prebuild": "npm run data && npm run data:static",
     "build": "next build",

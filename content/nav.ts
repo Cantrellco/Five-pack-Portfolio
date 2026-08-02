@@ -47,6 +47,18 @@ export type WorkTab = {
   label: string;
   kind: string;
   summary: string;
+  /**
+   * Which of the two bodies of work this is: a product shipped under his own
+   * name, or a site built for a client. Read off the source arrays rather than
+   * parsed out of `kind` — `flagship` and `harvest` ARE the native apps and
+   * `sites` ARE the client work, so the distinction is already structural and
+   * a display string never has to be pattern-matched to recover it.
+   *
+   * Drives a value difference on the tile's kind tag, never a size one: the
+   * grid's equal-weight rule (see `.work-grid` in globals.css) is deliberate
+   * and this does not touch it.
+   */
+  tone: 'product' | 'client';
 };
 
 export const WORK_TABS = [
@@ -55,12 +67,14 @@ export const WORK_TABS = [
     label: flagship.name,
     kind: flagship.kind,
     summary: 'Log sets, auto programming, AI with full access.',
+    tone: 'product',
   },
   {
     id: harvest.id,
     label: harvest.name,
     kind: harvest.kind,
     summary: harvest.tagline,
+    tone: 'product',
   },
   ...sites.map((site) => ({
     id: site.id,
@@ -70,6 +84,7 @@ export const WORK_TABS = [
     label: site.name,
     kind: site.kind,
     summary: site.summary,
+    tone: 'client' as const,
   })),
 ] as const satisfies readonly WorkTab[];
 

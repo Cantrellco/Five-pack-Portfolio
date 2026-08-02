@@ -30,23 +30,56 @@ export const profile = {
    *  to write can actually see it. */
   contactNote: 'No inbox filter and no assistant between us — I read every message myself.',
 
+  /** Sits under the GitHub Activity figures. Those come from the public API
+   *  only, and Workout Buddy's repo is private (`flagship.repoUrl` is
+   *  deliberately blank), so the language share counts none of the largest
+   *  thing on this site. Saying so converts a number that undersells the
+   *  native work into one a reader can place — the same rule the field copy
+   *  follows: a figure never gets to imply something the data does not
+   *  support. Here rather than inline in `Contact.tsx` because all copy lives
+   *  in `content/`, and this line is now read on the phone as well as the
+   *  desktop, so it has one source or it drifts. */
+  activityNote:
+    'Public repositories only — Workout Buddy’s source is private, so none of its Swift is counted here.',
+
   /** Longer version for meta description and JSON-LD. */
   // No Core ML: nothing shipped uses it, and this string is the meta
   // description and the JSON-LD, which is the last place to overstate a stack.
   summary:
     'Self-taught full-stack engineer and AI developer in Southern Illinois. I design, build, ship, and maintain products end to end — native iOS and watchOS, React Native, Postgres, and the AI systems running inside them.',
 
-  /** The phone About screen's whole bio, in one breath: what he builds and
-   *  who it is all for. The two full paragraphs below stay a desktop read —
-   *  that screen is sized to one viewport and this line is what fits it. */
-  aboutPhoneLine:
-    'I design, build, and ship iOS apps and websites end to end. Jesus first, then my wife Gracie and our son Shepherd — everything else comes after.',
+  /** The phone About screen's bio: who he is, then what outranks the work.
+   *  The desktop `aboutBio` below is a longer read this screen has no room
+   *  for — `#about .section` is a fixed one-viewport screen on phones (see
+   *  globals.css), with the engraving pinned to its floor, so the copy has a
+   *  hard height budget and going over does not clip, it pushes the portrait
+   *  and the marks below the fold.
+   *
+   *  MEASURED, because that budget is easy to blow past by accident. These
+   *  two paragraphs leave `#about .section` inside the viewport at 360x640,
+   *  375x667, 375x812, 390x844, 393x852, 412x915 and 430x932, and 19px over
+   *  at 320x640 — a screen that already runs 44px over regardless. The two
+   *  middle paragraphs they were drafted with ("intuitive, polished and
+   *  thoughtfully crafted", "the smallest details make the biggest
+   *  difference") cost another 145px and 142px and put every phone from
+   *  70px to 439px past the fold, which is why they are not here.
+   *
+   *  Re-measure if either string grows. A sentence is roughly 25px a line at
+   *  this width. */
+  aboutPhone: {
+    lead: "I'm Cody Cantrell, a self-taught software developer focused on creating software that feels as good as it functions.",
+    personal:
+      "Outside of development, my faith in Jesus, my wife Gracie, and our son Shepherd are at the center of my life. When I'm away from the keyboard, you'll usually find me staying active or planning our next Disney World trip.",
+  },
 
-  /** The About panel's opening heading and its two paragraphs, in order. */
-  aboutHeading: 'Self-taught — and I stand behind it',
+  /** The About panel's bio, in order. No heading above it: the panel's own
+   *  "About" kicker is the heading, and a second one over the prose only
+   *  restated what the first paragraph already says in the reader's voice. */
   aboutBio: [
-    "I'm self-taught, and everything I've shipped came from wanting to build it myself first. Workout Buddy — an iOS and watchOS app with an AI coach that reads your training history and rewrites your program to fit — pulled me through React Native, native Swift and a Postgres backend on Supabase. The Harvest is a Bible app built on nothing but Apple's own frameworks. And in between, four sites for local businesses here in Southern Illinois: a coffee shop, a home inspector, a church, a play place for kids — each one shipped, each one still live.",
-    "Outside of it: Jesus first, then my wife Gracie and our son Shepherd — most of what isn't spent building software is spent with them. I work out most days and stay active, which is half the reason Workout Buddy exists in the first place. Disney World is the one trip we never get tired of taking.",
+    "I'm Cody Cantrell, a self-taught software developer with a passion for creating software that feels as good as it functions.",
+    "I enjoy building apps and websites that are intuitive, visually polished, and thoughtfully crafted. Whether I'm developing an iOS app, designing a website for a local business, or learning a new technology, I'm always looking for ways to create experiences that feel effortless to use. I believe great software is more than just functional—it should be fast, refined, and something people genuinely enjoy coming back to.",
+    "I care about the details. Smooth interactions, clean interfaces, thoughtful design, and solid engineering are the things that turn a good product into a great one, and they're the standards I try to bring to every project.",
+    "Outside of development, my faith in Jesus, my wife Gracie, and our son Shepherd are at the center of my life. They shape both how I work and why I build. When I'm away from the keyboard, you'll usually find me staying active or planning another trip to Disney World with my family.",
   ],
 
   location: 'Southern Illinois',
@@ -61,8 +94,8 @@ export const profile = {
   // TODO(owner): paste the real LinkedIn URL. Falsy = the link is not rendered.
   linkedin: '',
 
-  instagram: 'https://instagram.com/cantrellco.13',
-  instagramUser: 'cantrellco.13',
+  instagram: 'https://instagram.com/codycantrell.13',
+  instagramUser: 'codycantrell.13',
 
   // TODO(owner): drop the PDF at public/cody-cantrell-resume.pdf.
   // Falsy = the link is not rendered.

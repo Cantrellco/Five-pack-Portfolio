@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFieldRenderer, type FieldRenderer } from './renderer';
 import { loadField } from './load';
 
@@ -15,16 +15,28 @@ import { loadField } from './load';
  */
 export default function FieldCanvas({
   calm,
+  intro,
   onReady,
   onLost,
 }: {
   /** The phone profile — decided by FieldMount, which remounts this
    *  component (new `key`) when a desktop window crosses the breakpoint. */
   calm: boolean;
+  /** First visit: run the ink-down entrance. Decided by FieldMount (the
+   *  localStorage flag lives there); snapshotted at mount below. */
+  intro: boolean;
   onReady: () => void;
   onLost: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // The entrance belongs to the mount that started it. FieldMount marks the
+  // intro as spent the moment this canvas reports ready, and a prop that
+  // tracked that flip would re-run the effect below — tearing down a renderer
+  // two frames into the very entrance it was granted. useState's initializer
+  // reads the prop once and ignores it thereafter; a remount (new `key`)
+  // snapshots afresh.
+  const [runIntro] = useState(intro);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,7 +56,7 @@ export default function FieldCanvas({
     loadField(controller.signal, calm ? 4 : 1)
       .then((data) => {
         if (controller.signal.aborted) return;
-        renderer = createFieldRenderer(canvas, data, calm);
+        renderer = createFieldRenderer(canvas, data, calm, runIntro);
         onReady();
       })
       .catch((error: unknown) => {
@@ -63,7 +75,7 @@ export default function FieldCanvas({
       // context. On final unmount the extra call is a no-op.
       onLost();
     };
-  }, [calm, onReady, onLost]);
+  }, [calm, runIntro, onReady, onLost]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />;
 }

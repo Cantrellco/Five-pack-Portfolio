@@ -66,6 +66,17 @@ const nextConfig: NextConfig = {
               source: '/field/:file*',
               headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
             },
+            {
+              // For whoever opens the network tab: two facts about how the
+              // page is drawn, both checkable against components/field/.
+              // Render facts only — the training data behind the field is
+              // flagged placeholder, so no header claims meaning for it.
+              source: '/',
+              headers: [
+                { key: 'x-draw-calls-per-frame', value: '1' },
+                { key: 'x-3d-libraries', value: '0' },
+              ],
+            },
           ];
         },
       }),

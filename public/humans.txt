@@ -1,0 +1,13 @@
+/* TEAM */
+  Design, code, copy: Cody Cantrell
+  Contact: cantrellco.13 [at] gmail.com
+  GitHub: https://github.com/Cantrellco
+  Location: Fairfield, Illinois, US
+
+/* SITE */
+  Stack: Next.js App Router, TypeScript, served from Cloudflare Workers
+  Type: Newsreader, Instrument Sans, Martian Mono — subset and self-hosted
+  Field: hand-rolled WebGL — one program, two buffers, one draw call per frame
+  3D libraries: none
+  Works with: JavaScript off, WebGL off, reduced motion on
+  Last update: 2026-08-01

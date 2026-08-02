@@ -60,9 +60,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Selection speaks in two voices. Over ordinary ink, a quiet signal tint —
+   the accent at its most recessive. Over type that is already set in signal
+   (inline links) or reversed out of ink (the CTA), that tint would read as
+   signal-on-signal or vanish against the fill, so those contexts invert to a
+   full signal plate under paper type. Tokens only; the tint is color-mix. */
 ::selection {
   background-color: color-mix(in srgb, var(--signal) 22%, transparent);
   color: var(--ink);
+}
+
+.link::selection,
+.link *::selection {
+  background-color: var(--signal);
+  color: var(--paper);
 }
 
 :focus-visible {
@@ -218,6 +229,40 @@ html::-webkit-scrollbar-thumb:active,
 
 .body-copy > * + * {
   margin-top: 1em;
+}
+
+/* ---- micro-typography -----------------------------------------------------
+   Headings balance their rag; prose avoids orphans. `hanging-punctuation` is
+   Safari-only and inert everywhere else — a progressive nicety on the display
+   sizes, where an opening quote otherwise dents the left edge. Small caps are
+   deliberately NOT faked anywhere: the shipped subsets keep kern/liga/calt/
+   tnum/frac only (scripts/subset-fonts.py), no smcp, so `font-variant-caps`
+   could only synthesise. */
+.display-1,
+.display-2,
+.display-3 {
+  text-wrap: balance;
+}
+
+.display-1,
+.display-2 {
+  hanging-punctuation: first;
+}
+
+/* Element-level, so any class raises it without a fight — `.lede`,
+   `.body-copy` and `.work-tile-summary` already declare their own. */
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+
+/* Definition data is where figures columnate — the contact stat row, share
+   percentages — and `tnum` survives subsetting (see --layout-features in
+   scripts/subset-fonts.py), so the digits actually align rather than merely
+   being asked to. Dates already sit in `.mono`, which declares it below. */
+dd {
+  font-variant-numeric: tabular-nums;
 }
 
 /* The eyebrow voice: quiet sans caps, not mono. Two dozen of these open
@@ -898,9 +943,23 @@ html::-webkit-scrollbar-thumb:active,
      Padded from the control's own box (`2.75rem`, matching
      `.mobile-menu-button`) plus a gap, so the line wraps early instead of
      disappearing behind the plate. Only the opening line of each screen
-     needs this; everything below the control's band is already clear. */
+     needs this; everything below the control's band is already clear.
+
+     All four screens, not the two this started with. The rule was written
+     against About and Contact because those were the two whose opening lines
+     had been measured clipping — but the menu is fixed to the viewport and
+     every panel scrolls its own opening line into the same band under it, so
+     Resume's headline and the Work headline sit at exactly the same risk and
+     were simply never added.
+
+     Work is matched as a direct child on purpose. `#work` also contains all
+     six case studies, and an unscoped `#work .display-2` would indent every
+     display line inside every one of them; the child combinator keeps this to
+     the panel's own headline, which is the only line the menu can reach. */
   #about .display-2,
-  #contact .display-1 {
+  #contact .display-1,
+  #resume .display-1,
+  #work > .display-2 {
     padding-right: calc(2.75rem + var(--sp-2xs));
   }
 
@@ -1433,7 +1492,13 @@ html::-webkit-scrollbar-thumb:active,
 .work-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--sp-md);
+  /* Every auto row shares the same `fr`, so the grid sizes them all to
+     whichever tile needs the most room (Fusion Coffee's longer summary,
+     most of the time) instead of letting each row size to only its own
+     row's tallest tile — without this, six tiles of uneven summary length
+     landed on two or three different box heights instead of one. */
+  grid-auto-rows: 1fr;
+  gap: var(--sp-sm);
   /* The register marks on an edge tile (`.work-tile::before`/`::after`,
      below) sit outside the tile's own box by `--sp-2xs`, which used to be
      1px and went unnoticed but now is not — a tile flush against the grid's
@@ -1442,7 +1507,7 @@ html::-webkit-scrollbar-thumb:active,
      inset just moves the same overflow one level up, onto whatever contains
      the grid). Padding gives every edge that clearance instead; the tiles
      sit `--sp-2xs` inside where the surrounding prose does, which reads as
-     nothing next to a gap already sized in `--sp-md`. */
+     nothing next to a gap already sized in `--sp-sm`. */
   padding: var(--sp-2xs);
 }
 
@@ -1451,7 +1516,7 @@ html::-webkit-scrollbar-thumb:active,
   display: flex;
   flex-direction: column;
   gap: var(--sp-3xs);
-  padding: var(--sp-md);
+  padding: var(--sp-sm);
   border: 1px solid var(--graphite);
   text-decoration: none;
   color: var(--ink);
@@ -1542,6 +1607,29 @@ html::-webkit-scrollbar-thumb:active,
   width: fit-content;
   padding: 0.2em 0.55em;
   border: 1px solid var(--rule);
+}
+
+/* The row the kind tag sits in. It held a second span once — a "Flagship"
+   marker on one tile — and kept it beside the tag rather than under it,
+   because `.work-tile` is a flex COLUMN and a bare second span would have
+   taken a line of its own and made that one tile taller than the other five.
+   The marker is gone; the row stays, because it is what guarantees the tag
+   occupies exactly one line in every tile. */
+.work-tile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2xs);
+}
+
+/* The two bodies of work, told apart by VALUE rather than by hue: a project
+   shipped under his own name gets a stub at full graphite on ink, a client
+   site keeps the lighter `--rule` stub. No new token and no second accent —
+   the difference is the same two greys the page already uses, which is what
+   lets it read as a distinction rather than as decoration. */
+.work-tile[data-tone='product'] .work-tile-kind {
+  border-color: color-mix(in srgb, var(--graphite) 55%, var(--paper));
+  color: var(--ink);
 }
 
 .work-tile-summary {
@@ -1946,29 +2034,6 @@ html::-webkit-scrollbar-thumb:active,
   }
 }
 
-/* The one filled control on the site: the App Store call to action. */
-.cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6em;
-  padding: 0.72em 1.15em;
-  background-color: var(--ink);
-  color: var(--paper);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  text-decoration: none;
-  border: 1px solid var(--ink);
-  transition:
-    background-color var(--motion-fast) var(--motion-ease),
-    color var(--motion-fast) var(--motion-ease);
-}
-
-.cta:hover {
-  background-color: var(--signal);
-  border-color: var(--signal);
-}
-
 .cta-ghost {
   display: inline-flex;
   align-items: center;
@@ -2071,11 +2136,11 @@ html::-webkit-scrollbar-thumb:active,
 /* The mark itself: a `currentColor` fill shown through the logo's alpha, so
    the PNG contributes shape and nothing else. Painting it as a background
    colour rather than an `<img>` is what keeps the three marks inside the
-   token system — they inherit `--graphite` from `.corner-link` and follow it
-   to `--signal` on hover, which an `<img>` could not do. `contain` and the
-   square source keep every mark on one optical size; the box is sized per
-   breakpoint below. Both the prefixed and standard properties are set:
-   WebKit still needs `-webkit-mask` for the shorthand. */
+   token system — they inherit `--graphite` from `.corner-link` and hold it on
+   hover too; only the scale below moves. `contain` and the square source keep
+   every mark on one optical size; the box is sized per breakpoint below. Both
+   the prefixed and standard properties are set: WebKit still needs
+   `-webkit-mask` for the shorthand. */
 .corner-mark {
   display: block;
   /* `--mark-size` is the shared box set per breakpoint; `--mark-scale` is the
@@ -2087,6 +2152,12 @@ html::-webkit-scrollbar-thumb:active,
   background-color: currentColor;
   -webkit-mask: var(--mark) center / contain no-repeat;
   mask: var(--mark) center / contain no-repeat;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.corner-link:hover .corner-mark,
+.corner-link:focus-visible .corner-mark {
+  transform: scale(1.12);
 }
 
 /* Unconditional, not folded into the mobile block below: `next/image`'s
@@ -2124,6 +2195,24 @@ html::-webkit-scrollbar-thumb:active,
     position: relative;
   }
 
+  /* The sitewide 34rem measure is sized for a full-width column; this panel's
+     text lives in the deck's narrower content pane (`--deck-split`), so that
+     cap left the bio stacking taller than `.deck-content` itself and forced
+     the pane's own scroll on most desktop viewports tested (1280-1920px
+     wide). Widening cuts enough height to fit inside a normal viewport
+     without scrolling.
+
+     Not `max-width: none`: the corner marks sit `position: absolute; right:
+     0` off this same shell (see `#about .corner-links` below), stacked
+     across the bio's last ~196px of height. A full-width bio runs text right
+     under them — visible even at 34rem on a narrow-enough shell, since that
+     cap was never sized against the marks' column to begin with. Reserving
+     their width (the `#about .corner-link` box, 3.9rem) plus a fixed gap
+     keeps clear of them at every shell width instead. */
+  #about .body-copy {
+    max-width: calc(100% - 3.9rem - 1.5rem);
+  }
+
   /* The figure wrapper, not just the face: it now carries the name caption
      too, and neither belongs on desktop — the identity column already
      stands the full portrait and the `<h1>` next to this panel. */
@@ -2159,12 +2248,6 @@ html::-webkit-scrollbar-thumb:active,
     width: 3.9rem;
     height: 3.9rem;
     color: var(--graphite);
-    transition: color var(--motion-fast) var(--motion-ease);
-  }
-
-  #about .corner-link:hover,
-  #about .corner-link:focus-visible {
-    color: var(--signal);
   }
 
   /* One size for all three, and no per-mark correction: each PNG is trimmed
@@ -2195,6 +2278,28 @@ html::-webkit-scrollbar-thumb:active,
      every no-JS anchor jump lands ~100px short of the section it names. */
   [id] {
     scroll-margin-top: var(--sp-xs);
+  }
+
+  /* Mono comes up one step on the phone, and only mono.
+
+     `--fs-2xs` is a clamp whose vw term is 0.06 — near enough to nothing at
+     phone widths that it computes flat at ~11.1-11.6px across the whole
+     320-1023px range and only starts moving once the two-pane layout has
+     already taken over. Two classes are set at that size. `.label` earns it:
+     weight 600, uppercase, `--ls-label` tracking — an eyebrow built to be
+     quiet and legible at 11px, and bumping it would make the site's most
+     repeated element louder than the copy it introduces. `.mono` does not:
+     it inherits weight 400 and tracks at 0.02em, so nothing compensates for
+     the size, and it is set in `--graphite`, whose 4.73:1 is the narrowest
+     AA margin of the three type colours.
+
+     That combination — smallest size, lightest weight, lowest-contrast
+     colour — is not carrying decoration. It is the resume's role dates and
+     locations, Contact's location line and the dated "now" line: the facts a
+     reader skims for. `--fs-xs`, the next step that already exists, on the
+     one viewport where it matters. */
+  .mono {
+    font-size: var(--fs-xs);
   }
 
   /* The deck's own vertical padding belonged to the scrolling-document
@@ -2343,12 +2448,6 @@ html::-webkit-scrollbar-thumb:active,
     width: 4.3rem;
     height: 4.3rem;
     color: var(--graphite);
-    transition: color var(--motion-fast) var(--motion-ease);
-  }
-
-  .corner-link:hover,
-  .corner-link:focus-visible {
-    color: var(--signal);
   }
 
   /* One size for all three — see the `#about` copy above. A touch larger than
@@ -2382,6 +2481,55 @@ html::-webkit-scrollbar-thumb:active,
     display: none;
   }
 
+  /* The skills marquee, sized for the phone rather than inherited from the
+     desktop pane.
+
+     Two problems, one cause: the row was tuned against a ~670px content pane
+     and never re-measured on a phone. Numbers below are what the tokens
+     actually COMPUTE at a 390px viewport — where `--gutter` leaves a 348px
+     pane — not the ceilings their clamps top out at, which is a different
+     figure at a width this rule never applies to.
+
+     The gap was `--sp-lg`, and at 390px that is 32px, not the 48px it reaches
+     past ~1650px. So the pitch was 88 + 32 = 120px: three orbs and about 20px
+     of pane left over, which is a short static list rather than a track. The
+     5% edge fade was 17px of a 348px pane — narrower than one word, so a name
+     did not fade out, it stopped mid-letter.
+
+     The orb and the gap each come in a step, to 80px and `--sp-md` (24px), a
+     104px pitch: three orbs plus a third of a fourth, so there is always one
+     arriving. The fade goes to 10%, about 35px, which is a word and a half.
+     5rem is the floor and not a free choice: `Accessibility` is the longest
+     name in the set and measures ~72px at `--fs-2xs`, so anything under it
+     starts wrapping captions to two lines and the row goes ragged.
+
+     Sizes and mask stops only — the two-copy loop, `skills-scroll` and
+     `skill-bob` are untouched, so nothing here costs a frame. */
+  .skills-set {
+    gap: var(--sp-md);
+    padding-inline-end: var(--sp-md);
+  }
+
+  .skill-orb {
+    width: 5rem;
+  }
+
+  .skill-orb-circle {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .skills-track-viewport {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 10%,
+      black 90%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
+  }
+
   /* ---- a project as a whole page ---------------------------------------- */
 
   /* The dialog stops being a card floating over the grid and takes the whole
@@ -2406,14 +2554,148 @@ html::-webkit-scrollbar-thumb:active,
 
   /* On a full-page case study the close control sits over whatever scrolls
      past it, so it gets the same treatment as every other piece of floating
-     chrome: a solid paper plate, framed, never a blend. */
+     chrome: a solid paper plate, framed, never a blend.
+
+     2.75rem, matching `.mobile-menu-button` — the phone's other piece of
+     floating chrome — rather than the 2.5rem it carried. The dialog goes
+     edge-to-edge at this breakpoint (`width: 100%`, `height: 100dvh` above),
+     so there is no exposed backdrop left to tap: this button is the only
+     visible way out of a case study, and the only other path is the browser's
+     own back gesture. A control with that job does not get to be 4px under
+     the touch minimum. */
   .work-dialog:modal .work-dialog-close {
     top: var(--sp-sm);
     right: var(--gutter);
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     background-color: var(--paper);
     border: 1px solid var(--rule);
+  }
+}
+
+/* ---------------------------------------------------------------- tall phones
+   About and Contact force `min-height: 100svh` and pin `.corner-plate` to the
+   floor with `margin-top: auto` — the intro holds the top, the plate holds the
+   bottom, and whatever is left over is the gap between them. That gap is not a
+   constant: the comment on those rules sizes the screen against "~360x640 and
+   up", and a 640px-tall viewport has almost nothing spare. A current phone is
+   850-950 CSS px tall, where the same content leaves 350-450px of empty paper
+   in the middle of the screen.
+
+   The composition does not change — intro at the top, plate on the floor. The
+   room goes to two things instead of to nothing.
+
+   CONTENT first. Both screens have a paragraph they were withholding from the
+   phone: About's client work, and Contact's live GitHub figures, which were
+   `hidden lg:block` and are the most checkable claim the site makes. A reader
+   deciding whether to write is on Contact; giving that reader empty paper and
+   keeping the evidence for desktop is the wrong way round.
+
+   Then the PLATE takes what is still spare: the engraving grows and the marks
+   and their touch boxes grow with it, so the remainder goes to the one asset
+   this layout is built around. Bounded by a vw term as well, so a tall NARROW
+   phone never lets the figure outgrow its own column.
+
+   Scoped in CSS rather than by measuring the viewport in JavaScript: a screen
+   that does not qualify renders exactly what it rendered before, from one
+   markup, with no second render path and nothing to hydrate.
+
+   THE QUERY IS THREE CONDITIONS, and every one of them was paid for.
+
+   `screen` — because a print page box is ALSO narrow and tall. At Letter with
+   this sheet's own `@page { margin: 16mm 18mm }` it measures roughly 680x935
+   CSS px, so a bare `(max-width: 63.999rem) and (min-height: ...)` matches
+   paper and starts printing the GitHub figures onto the resume. The block used
+   to be `hidden lg:block`, which never printed precisely because `lg` never
+   matches the page box — the print sheet below relies on that same fact for
+   the profile-links list. This keeps that behaviour.
+
+   `min-height: 53rem` (848px), not the 800px this shipped with first. 800 is
+   the height at which the SPARE ROOM appears; it is not the height at which
+   the revealed content fits. Measured on the real page, the screens this fed
+   needed 807-836px across phone widths against a query that fired at 800 — so
+   it went off 7-28px early and pushed them past the fold on exactly the phones
+   it was written for: 375x812 (iPhone X through 13 mini), 390x800, 412x812.
+   That is the opposite of the population the one-viewport rule tolerates
+   scrolling on. 848px clears the worst measured case by about 12px.
+
+   `min-width: 22rem` (352px) and `max-width: 30rem` (480px) — because the
+   height copy occupies is a function of WIDTH, and a height-only gate cannot
+   see that. Below 352px the same paragraph rewraps until the screen needs
+   859-906px, so a tall narrow phone qualified on height and overflowed by
+   105px anyway. Above 480px the spacing tokens keep climbing with vw and the
+   requirement reaches ~888px at 1023px wide. Both ends are simply excluded:
+   they render what they rendered before this block existed, which is a
+   complete screen, not a broken one.
+
+   About no longer has anything gated here — its phone bio is two paragraphs
+   at every size now, held to a budget measured against the shortest phone
+   rather than to whatever a tall one leaves spare (see `aboutPhone` in
+   content/profile.ts). Contact keeps its figures, which is what the numbers
+   above were measured against.
+-------------------------------------------------------------------------- */
+
+/* Hidden by default, so the short phone is the base case and the tall one is
+   the enhancement — never the other way round, where a missed query leaves a
+   screen overflowing. */
+.contact-activity {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .contact-activity {
+    display: block;
+  }
+}
+
+@media screen and (min-width: 22rem) and (max-width: 30rem) and (min-height: 53rem) {
+  .contact-activity {
+    display: block;
+  }
+
+  /* The figures, compacted to fit the room rather than dropped into it at
+     their desktop size. Set as they are on a wide pane — `Block`'s `--sp-xl`
+     of air, one stat per row, each number at `.display-3` — the three of them
+     came to about 300px and pushed Contact 106px past the one viewport it is
+     supposed to be, which trades one problem for a worse one.
+
+     Three across instead of stacked (the values are a count, a date and a
+     language name — all short), a step down in display size, tighter rows,
+     and the per-language percentage split dropped: it is the least of the
+     three facts and by far the tallest, being the only one that wraps. */
+  .contact-activity > div {
+    margin-top: var(--sp-lg);
+  }
+
+  .contact-activity dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-xs);
+  }
+
+  .contact-activity dl > div {
+    border-bottom: 0;
+    padding-block: var(--sp-xs);
+  }
+
+  .contact-activity dd.display-3 {
+    font-size: var(--fs-md);
+  }
+
+  .contact-activity dd + dd {
+    display: none;
+  }
+
+  .corner-figure {
+    width: min(46vw, 14rem);
+  }
+
+  .corner-link {
+    width: 4.8rem;
+    height: 4.8rem;
+  }
+
+  .corner-mark {
+    --mark-size: 3.5rem;
   }
 }
 
@@ -2441,5 +2723,173 @@ html::-webkit-scrollbar-thumb:active,
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* -------------------------------------------------------------------- print
+   Cmd+P IS the resume PDF. Chrome goes, hidden panels come back, the tokens
+   re-ink to black on white, and only the letterhead (name), the resume and
+   the contact essentials print — About and Work stay on screen, which is
+   what keeps this to one or two typeset pages. Headings are already
+   Newsreader via the display classes; dates already tabular via `.mono`.
+-------------------------------------------------------------------------- */
+
+/* The deck marks inactive panels with the `hidden` attribute (see
+   components/deck/Panel.tsx), and Tailwind's preflight enforces `[hidden]`
+   with !important from inside `@layer base` — a layered important
+   declaration outranks any unlayered one, so the restore must sit in that
+   same layer and win on specificity. Only the two panels that print are
+   restored: a bare `[data-panel][hidden]` here would, by that same
+   layered-importance rule, also overpower the unlayered `#about`/`#work`
+   hide below whenever those panels are the hidden ones. */
+@layer base {
+  @media print {
+    #resume[data-panel][hidden],
+    #contact[data-panel][hidden] {
+      display: block !important;
+    }
+  }
+}
+
+@media print {
+  @page {
+    margin: 16mm 18mm;
+  }
+
+  /* Re-ink the six tokens rather than restyle components: black on white,
+     greys via color-mix, the accent surrendered to ink — a printed page has
+     no hover to spend signal on. */
+  :root {
+    --paper: white;
+    --paper-2: white;
+    --ink: black;
+    --graphite: color-mix(in srgb, black 70%, white);
+    --rule: color-mix(in srgb, black 25%, white);
+    --signal: black;
+  }
+
+  /* Resume scale: ~10pt body; every rem step follows. */
+  html {
+    font-size: 13px;
+  }
+
+  /* Chrome off: the field, the masthead tablist, the phone menu, the skip
+     link, the engraving and its solids, every button (copy-email, print,
+     dialog close), the CTAs, and the two panels that are not resume
+     material. */
+  .field-layer,
+  header,
+  .mobile-menu,
+  .skip-link,
+  .portrait,
+  .objects,
+  .corner-plate,
+  .cta-ghost,
+  button,
+  #about,
+  #work {
+    display: none !important;
+  }
+
+  /* Reveal-managed copy prints inked, wherever the scroll driver left it —
+     the importants are for GSAP's inline styles. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Undo the app shell — the one-viewport lock, the two-pane grid, the
+     scroll mask, the phone screens' 100svh floors. Print is the stacked
+     document again. */
+  .page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .deck {
+    display: block;
+    padding: 0;
+  }
+
+  .deck-content {
+    height: auto;
+    overflow: visible;
+    padding: 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .deck-content [data-panel] > *:first-child {
+    padding-top: 0;
+  }
+
+  .deck-content .section,
+  #contact .section {
+    display: block;
+    min-height: 0;
+    padding-block: 0 var(--sp-md);
+  }
+
+  /* The letterhead: the sr-only clip (phone) and the absolute pin (wide)
+     both stand down, and the two name lines join on one. */
+  .deck-identity {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .identity-name {
+    position: static;
+    margin: 0 0 var(--sp-md);
+  }
+
+  .identity-name span {
+    display: inline;
+  }
+
+  /* Entries hold together: a role never splits mid-item, a heading never
+     strands at a page foot. */
+  #resume ol > li,
+  #resume dl > div {
+    break-inside: avoid;
+  }
+
+  .display-1,
+  .display-3,
+  .label {
+    break-after: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* The profile links (GitHub, LinkedIn, résumé) are desktop-only on screen —
+     `hidden … lg:flex` in components/Contact.tsx — and print media queries
+     evaluate against the page box, where `lg:` (64rem) never matches: Letter
+     portrait is ~51rem, A4 narrower still. Restore the list explicitly or the
+     printed contact section carries no profile URL at all, and the suffix
+     rule below has nothing in #contact to ink. Scoped to the shell's direct
+     child so the corner plate's list (hidden with its parent above) is not
+     implicated. */
+  #contact .shell > ul {
+    display: flex;
+  }
+
+  /* Ink the link targets onto the paper — scoped to the printed panels so
+     the suffix never sprays over UI controls, with the underline pseudo's
+     absolute 1px box stood down where the suffix takes it over. */
+  #resume a[href^='http']::after,
+  #contact a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    position: static;
+    height: auto;
+    background: none;
+    opacity: 1;
+    font-size: 0.85em;
   }
 }

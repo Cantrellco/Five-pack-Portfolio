@@ -1,4 +1,5 @@
 import { fieldState } from '@/lib/field-state';
+import { ease } from '@/lib/ease';
 import { fieldFrag, fieldVert } from './shaders';
 import type { FieldData } from './load';
 
@@ -13,13 +14,25 @@ import type { FieldData } from './load';
  * 106KB buffer and one draw call cannot ship a 3D engine to draw eighteen
  * thousand dots.
  *
- * What is actually needed is here: one program, two buffers, eight uniforms
+ * What is actually needed is here: one program, two buffers, ten uniforms
  * and a loop. The GLSL is unchanged — it was always hand-written.
  */
 
 type GL = WebGL2RenderingContext | WebGLRenderingContext;
 
 const MAX_DPR = 1.75;
+
+/** The directional wake's hard ceiling, in canvas heights per second. The
+ *  clamp is what keeps a flick reading as weight dragged through ink rather
+ *  than as a cursor effect — the shader scales whatever survives it by 0.05. */
+const MAX_WAKE = 1.0;
+
+/** The ink-down entrance: how long the chronological sweep takes, and where
+ *  the reveal uniform parks once it is done. The rest value sits past 1.0 by
+ *  more than the shader's feather width (1/14), so the newest mark finishes
+ *  its fade and every point clamps to fully drawn from then on. */
+const REVEAL_SECONDS = 2.2;
+const REVEAL_REST = 1.15;
 
 /** Frame-rate independent approach. `rate` is roughly "fraction closed per
  *  second", so the feel is identical at 60fps and 120fps. */
@@ -79,11 +92,16 @@ export type FieldRenderer = { destroy: () => void };
  * wanders the canvas on its own — same parting-of-marks read, no touch
  * required. The marks take a small size bump against the thinner buffer, and
  * the DPR cap drops a step.
+ *
+ * `intro` runs the ink-down entrance: the marks draw themselves in in logged
+ * order over REVEAL_SECONDS. FieldMount decides it (first visit only, never
+ * under reduced motion); here it is just the starting value of one uniform.
  */
 export function createFieldRenderer(
   canvas: HTMLCanvasElement,
   data: FieldData,
   calm = false,
+  intro = false,
 ): FieldRenderer {
   const gl = (canvas.getContext('webgl2', {
     alpha: true,
@@ -114,9 +132,11 @@ export function createFieldRenderer(
     uPixelRatio: gl.getUniformLocation(pointsProgram, 'uPixelRatio'),
     uDensity: gl.getUniformLocation(pointsProgram, 'uDensity'),
     uPointer: gl.getUniformLocation(pointsProgram, 'uPointer'),
+    uPointerVel: gl.getUniformLocation(pointsProgram, 'uPointerVel'),
     uR2: gl.getUniformLocation(pointsProgram, 'uR2'),
     uInk: gl.getUniformLocation(pointsProgram, 'uInk'),
     uCalm: gl.getUniformLocation(pointsProgram, 'uCalm'),
+    uReveal: gl.getUniformLocation(pointsProgram, 'uReveal'),
   };
 
   const maxDpr = calm ? 1.5 : MAX_DPR;
@@ -133,6 +153,14 @@ export function createFieldRenderer(
   let time = 0;
   let pointerX = 0.5;
   let pointerY = 0.5;
+  // The wake: the smoothed pointer's velocity, smoothed once more below so it
+  // builds and decays like drag through something viscous.
+  let pointerVelX = 0;
+  let pointerVelY = 0;
+  // The entrance. `revealT` is raw progress 0..1; `reveal` is the eased,
+  // scaled uniform value. Both start finished unless this is a first visit.
+  let revealT = intro ? 0 : 1;
+  let reveal = intro ? 0 : REVEAL_REST;
   let density = 1;
   let width = 0;
   let height = 0;
@@ -173,8 +201,31 @@ export function createFieldRenderer(
     time += dt;
 
     // Slow enough to read as weight rather than as a cursor effect.
+    const prevPointerX = pointerX;
+    const prevPointerY = pointerY;
     pointerX = approach(pointerX, (fieldState.pointerX + 1) / 2, 1.7, dt);
     pointerY = approach(pointerY, (fieldState.pointerY + 1) / 2, 1.7, dt);
+
+    // The wake's velocity term: differentiate the already-smoothed pointer,
+    // smooth again, then clamp hard. When the pointer stops, this decays to
+    // zero on its own in well under a second — nothing to reset.
+    const invDt = 1 / Math.max(dt, 1e-4);
+    pointerVelX = approach(pointerVelX, (pointerX - prevPointerX) * invDt, 5, dt);
+    pointerVelY = approach(pointerVelY, (pointerY - prevPointerY) * invDt, 5, dt);
+    let wakeX = pointerVelX;
+    let wakeY = pointerVelY;
+    const wakeSpeed = Math.hypot(wakeX, wakeY);
+    if (wakeSpeed > MAX_WAKE) {
+      wakeX *= MAX_WAKE / wakeSpeed;
+      wakeY *= MAX_WAKE / wakeSpeed;
+    }
+
+    // The entrance sweep, eased through the house curve. Once finished the
+    // branch never runs again and the uniform is a parked constant.
+    if (revealT < 1) {
+      revealT = Math.min(1, revealT + dt / REVEAL_SECONDS);
+      reveal = ease(revealT) * REVEAL_REST;
+    }
 
     const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     const aspect = width / Math.max(1, height);
@@ -188,9 +239,11 @@ export function createFieldRenderer(
     gl!.uniform1f(fieldLoc.uPixelRatio, dpr);
     gl!.uniform1f(fieldLoc.uDensity, density);
     gl!.uniform2f(fieldLoc.uPointer, pointerX, pointerY);
+    gl!.uniform2f(fieldLoc.uPointerVel, wakeX, wakeY);
     gl!.uniform2f(fieldLoc.uR2, data.r2[0], data.r2[1]);
     gl!.uniform3f(fieldLoc.uInk, ink[0], ink[1], ink[2]);
     gl!.uniform1f(fieldLoc.uCalm, calm ? 1 : 0);
+    gl!.uniform1f(fieldLoc.uReveal, reveal);
 
     gl!.bindBuffer(gl!.ARRAY_BUFFER, pointsPos);
     gl!.enableVertexAttribArray(fieldLoc.position);
@@ -245,7 +298,13 @@ export function createFieldRenderer(
       gl.deleteBuffer(pointsPos);
       gl.deleteBuffer(pointsMeta);
       gl.deleteProgram(pointsProgram);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      // Deliberately NO loseContext() here. Chrome answers that call with a
+      // console warning ('WebGL: CONTEXT_LOST_WEBGL: loseContext called'),
+      // and destroy() runs on user-reachable paths — a breakpoint remount —
+      // where the zero-console-warnings rule applies. The GPU resources worth
+      // freeing early are released above; the canvas element itself is
+      // discarded with the unmount, and the browser reclaims the context
+      // along with it.
     },
   };
 }
