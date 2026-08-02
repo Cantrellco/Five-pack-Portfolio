@@ -2563,13 +2563,17 @@ dd {
      reads as "this is where the box ends"; a fade reads as "there is more
      underneath this," which is the whole point here: nothing else on this
      box hints that it scrolls at all — no visible scrollbar on a phone,
-     no arrow, nothing — so the fade is the one cue a reader gets. Static
-     rather than tied to actual scroll position (CSS alone cannot see
-     that): it very occasionally fades the true last line too, once
-     scrolled all the way down, which is a small cost against every other
-     phone screen where the fade is telling the truth. `3rem`, not smaller
-     — measured against this face's own x-height, anything short of that
-     read as a stray shadow rather than a fade. */
+     no arrow, nothing — so the fade is the one cue a reader gets. `3rem`,
+     not smaller — measured against this face's own x-height, anything
+     short of that read as a stray shadow rather than a fade.
+
+     CSS alone cannot see scroll position, so on its own this mask would
+     dim the true last line too, permanently, the instant a reader actually
+     reached it — telling the truth for the entire scroll except the one
+     moment it matters most. `.is-at-bottom` below is `components/
+     AboutBio.tsx` clearing the mask once scrollTop genuinely reaches the
+     end, so the fade means "keep going" for exactly as long as that is
+     true and never after. */
   #about .about-bio {
     flex: 1;
     min-height: 0;
@@ -2577,6 +2581,11 @@ dd {
     overscroll-behavior: contain;
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
     mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent 100%);
+  }
+
+  #about .about-bio.is-at-bottom {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   /* Contact's display type, one step down per element: the headline and the
