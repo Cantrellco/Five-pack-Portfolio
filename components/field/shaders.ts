@@ -29,6 +29,7 @@ uniform vec2  uR2;         // low-discrepancy constants, from the manifest
 uniform float uCalm;       // 1 below the two-pane breakpoint: phone profile
 uniform vec2  uPointerVel; // pointer travel, smoothed and hard-clamped CPU-side
 uniform float uReveal;     // ink-down sweep; parked past 1.0 once complete
+uniform float uMorph;      // 0 ambient, 1 fully the curve below; eased CPU-side
 
 varying float vAlpha;
 
@@ -118,6 +119,38 @@ void main() {
   vec2 dl = pa - la;
   float lensPull = exp(-dot(dl, dl) * 5.0) * 0.03 * uCalm;
   p += normalize(dl + vec2(1e-5)) * lensPull;
+
+  // --- the morph (Konami code only) ------------------------------------------
+  // The field's one deliberate exception to never resolving into a shape --
+  // and even here it draws no data. A Lissajous figure, closed-form from
+  // index alone the same way the ambient scatter already is, so it costs
+  // no third buffer and no baked positions: r2.x (recomputed, not stored)
+  // places each point along the curve, r2.y gives it a little radial
+  // give so 18,067 samples read as a drawn stroke rather than a dotted
+  // line with visible gaps. uMorph is pre-eased on the CPU (see
+  // renderer.ts's morph envelope) into a plain 0..1 blend weight, so this
+  // side only ever mixes -- it does not know or care whether it is
+  // ramping in, held, or ramping back out.
+  //
+  // theta drifts slowly with uTime so the held figure keeps the same
+  // "never truly still" quality the drift section's own comment argues
+  // for, rather than freezing into a static texture for the seconds it
+  // holds. The 3:2 frequency ratio is what makes it a Lissajous figure and
+  // not an ellipse; the phase offset keeps it from closing into a
+  // perfectly symmetric figure-eight, which read as too tidy, too much
+  // like a logo, for a mark that is supposed to still be ink and not a
+  // glyph.
+  float theta = r2.x * 6.28318530718 + uTime * 0.05;
+  vec2 curve = vec2(sin(3.0 * theta + 1.318), sin(2.0 * theta));
+  float give = (r2.y - 0.5) * 0.05;
+  vec2 curveWide = curve * vec2(0.34, 0.28) + normalize(curve + vec2(1e-4)) * give;
+  // curveWide.x was built in the same aspect-corrected space the pointer
+  // math above uses, and unlike that tiny nudge this offset spans most of
+  // the canvas -- left uncorrected it would draw an egg, not a figure,
+  // on any window that is not square. Dividing back by uAspect here is
+  // the inverse of the pointer section's own pa = vec2(p.x * uAspect, p.y).
+  vec2 shapeUV = vec2(0.5 + curveWide.x / uAspect, 0.5 + curveWide.y);
+  p = mix(p, shapeUV, uMorph);
 
   // --- adaptive thinning ------------------------------------------------------
   // Drop a deterministic slice of the points rather than fading everything,

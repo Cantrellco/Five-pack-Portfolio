@@ -2191,6 +2191,168 @@ dd {
   }
 }
 
+/* ---- The command palette: Cmd/Ctrl+K jump-to-section -----------------------
+   Same native-`<dialog>` foundation as `.work-dialog` and the same flat,
+   un-rounded, single-plane surface language, but this one only ever exists
+   enhanced and modal — `CommandPalette` renders nothing until scripting has
+   taken over, so unlike `.work-dialog` there is no bare `open` state to
+   carry rules for. */
+
+.command-palette {
+  position: relative;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--rule);
+  width: min(92vw, 30rem);
+  max-height: min(70vh, 26rem);
+  background-color: var(--paper);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.command-palette::backdrop {
+  background-color: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+/* The same register marks `.work-dialog` carries — see the longer note
+   above that block for why they are inset from the frame (`--sp-3xs`)
+   rather than sitting on the border itself: `:modal` clips overflow at the
+   inside edge of the 1px border, and a mark straddling that edge loses a
+   sliver of itself to the clip. */
+.command-palette::before,
+.command-palette::after {
+  content: '';
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid var(--signal);
+  pointer-events: none;
+}
+
+.command-palette::before {
+  top: var(--sp-3xs);
+  left: var(--sp-3xs);
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.command-palette::after {
+  bottom: var(--sp-3xs);
+  right: var(--sp-3xs);
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Rise-and-fade in, identical timing and curve to `.work-dialog`'s own so a
+   reader who has opened a case study already knows how this one will move.
+   See the longer note above `.work-dialog`'s matching block for why
+   `@starting-style` and `allow-discrete` are what let a `display: none`
+   element transition at all. */
+.command-palette {
+  opacity: 0;
+  transform: translateY(var(--sp-sm)) scale(0.98);
+  transition:
+    opacity var(--motion-base) var(--motion-ease),
+    transform var(--motion-base) var(--motion-ease),
+    overlay var(--motion-base) var(--motion-ease) allow-discrete,
+    display var(--motion-base) var(--motion-ease) allow-discrete;
+}
+
+.command-palette:modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .command-palette:modal {
+    opacity: 0;
+    transform: translateY(var(--sp-sm)) scale(0.98);
+  }
+}
+
+.command-palette::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--motion-base) var(--motion-ease),
+    overlay var(--motion-base) var(--motion-ease) allow-discrete,
+    display var(--motion-base) var(--motion-ease) allow-discrete;
+}
+
+.command-palette:modal::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .command-palette:modal::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-palette,
+  .command-palette::backdrop {
+    transition: none;
+  }
+}
+
+.command-palette-body {
+  display: flex;
+  flex-direction: column;
+  max-height: min(70vh, 26rem);
+}
+
+.command-palette-input {
+  flex: none;
+  width: 100%;
+  padding: var(--sp-sm) var(--sp-md);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--ff-body);
+  font-size: var(--fs-md);
+}
+
+.command-palette-input::placeholder {
+  color: var(--graphite);
+}
+
+.command-palette-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-2xs);
+}
+
+.command-palette-item {
+  padding: var(--sp-xs) var(--sp-sm);
+  color: var(--graphite);
+  cursor: pointer;
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+/* Colour alone, the same way `.tab[aria-selected='true']` and
+   `.mobile-menu-item[aria-current='true']` both carry their own "this one"
+   state — no fill, no bar; this site's own house rule for it. The keyboard's
+   active row and a pointer's hovered one are the same state here
+   (`onMouseEnter` moves `activeIndex` to match), so one rule covers both. */
+.command-palette-item[aria-selected='true'] {
+  color: var(--ink);
+}
+
+.command-palette-empty {
+  padding: var(--sp-xs) var(--sp-sm);
+  color: var(--graphite);
+}
+
+.command-palette-hint {
+  flex: none;
+  display: flex;
+  gap: var(--sp-sm);
+  padding: var(--sp-xs) var(--sp-md);
+  border-top: 1px solid var(--rule);
+  color: var(--graphite);
+}
+
 .cta-ghost {
   display: inline-flex;
   align-items: center;

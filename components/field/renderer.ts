@@ -34,10 +34,32 @@ const MAX_WAKE = 1.0;
 const REVEAL_SECONDS = 2.2;
 const REVEAL_REST = 1.15;
 
+/** The Konami-code morph's envelope, in seconds: ramp onto the curve, hold
+ *  it, ease back to ambient scatter. Asymmetric on purpose — the release is
+ *  slower than the approach, the same way the reveal sweep and the pointer's
+ *  own easing are never symmetric either; a fast snap into shape and a slow
+ *  dissolve out of it reads as "arriving" and "settling", not as a loop. */
+const MORPH_IN_SECONDS = 0.9;
+const MORPH_HOLD_SECONDS = 2.0;
+const MORPH_OUT_SECONDS = 1.4;
+const MORPH_TOTAL_SECONDS = MORPH_IN_SECONDS + MORPH_HOLD_SECONDS + MORPH_OUT_SECONDS;
+
 /** Frame-rate independent approach. `rate` is roughly "fraction closed per
  *  second", so the feel is identical at 60fps and 120fps. */
 const approach = (current: number, target: number, rate: number, dt: number) =>
   current + (target - current) * (1 - Math.exp(-rate * dt));
+
+/** 0 at the start, 1 across the hold, back to 0 once the envelope has run
+ *  its course — `ease` (the site's one curve) drives both ramps, so this
+ *  moves with the same weight as everything else on the page. */
+function morphEnvelope(elapsedSeconds: number): number {
+  if (elapsedSeconds < MORPH_IN_SECONDS) return ease(elapsedSeconds / MORPH_IN_SECONDS);
+  if (elapsedSeconds < MORPH_IN_SECONDS + MORPH_HOLD_SECONDS) return 1;
+  if (elapsedSeconds < MORPH_TOTAL_SECONDS) {
+    return 1 - ease((elapsedSeconds - MORPH_IN_SECONDS - MORPH_HOLD_SECONDS) / MORPH_OUT_SECONDS);
+  }
+  return 0;
+}
 
 function compile(gl: GL, type: number, source: string, label: string) {
   const shader = gl.createShader(type);
@@ -137,6 +159,7 @@ export function createFieldRenderer(
     uInk: gl.getUniformLocation(pointsProgram, 'uInk'),
     uCalm: gl.getUniformLocation(pointsProgram, 'uCalm'),
     uReveal: gl.getUniformLocation(pointsProgram, 'uReveal'),
+    uMorph: gl.getUniformLocation(pointsProgram, 'uMorph'),
   };
 
   const maxDpr = calm ? 1.5 : MAX_DPR;
@@ -164,6 +187,14 @@ export function createFieldRenderer(
   let density = 1;
   let width = 0;
   let height = 0;
+
+  // The morph. `seenMorphTrigger` is what lets this loop tell "a new Konami
+  // code just landed" from "one landed a while ago and this is just another
+  // frame" — see the counter's own comment in field-state.ts for why a
+  // counter rather than a timestamp or a boolean.
+  let seenMorphTrigger = fieldState.morphTrigger;
+  let morphElapsed = MORPH_TOTAL_SECONDS;
+  let morph = 0;
 
   // ---- adaptive quality ---------------------------------------------------
   // Stands in for drei's PerformanceMonitor: sample frame times over a second
@@ -227,6 +258,20 @@ export function createFieldRenderer(
       reveal = ease(revealT) * REVEAL_REST;
     }
 
+    // A new Konami code restarts the envelope from zero even mid-morph —
+    // running the code again is a request to see it again, not a request
+    // that gets ignored because one is already playing.
+    if (fieldState.morphTrigger !== seenMorphTrigger) {
+      seenMorphTrigger = fieldState.morphTrigger;
+      morphElapsed = 0;
+    }
+    if (morphElapsed < MORPH_TOTAL_SECONDS) {
+      morph = morphEnvelope(morphElapsed);
+      morphElapsed += dt;
+    } else {
+      morph = 0;
+    }
+
     const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     const aspect = width / Math.max(1, height);
 
@@ -244,6 +289,7 @@ export function createFieldRenderer(
     gl!.uniform3f(fieldLoc.uInk, ink[0], ink[1], ink[2]);
     gl!.uniform1f(fieldLoc.uCalm, calm ? 1 : 0);
     gl!.uniform1f(fieldLoc.uReveal, reveal);
+    gl!.uniform1f(fieldLoc.uMorph, morph);
 
     gl!.bindBuffer(gl!.ARRAY_BUFFER, pointsPos);
     gl!.enableVertexAttribArray(fieldLoc.position);

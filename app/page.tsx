@@ -1,5 +1,6 @@
 import { About } from '@/components/About';
 import { ClientSite } from '@/components/ClientSite';
+import { CommandPalette } from '@/components/CommandPalette';
 import { Contact } from '@/components/Contact';
 import { Flagship } from '@/components/Flagship';
 import { Harvest } from '@/components/Harvest';
@@ -9,6 +10,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { Resume } from '@/components/Resume';
 import { DeckProvider } from '@/components/deck/DeckContext';
 import { Panel } from '@/components/deck/Panel';
+import { FieldMorphTrigger } from '@/components/field/FieldMorphTrigger';
 import { FieldMount } from '@/components/field/FieldMount';
 import { MotionProvider } from '@/components/motion/MotionProvider';
 import { Skills } from '@/components/work/Skills';
@@ -40,6 +42,7 @@ export default async function Page() {
   return (
     <>
       <FieldMount />
+      <FieldMorphTrigger />
       <DeckProvider>
         <div className="page">
           <Masthead />
@@ -48,6 +51,12 @@ export default async function Page() {
               Fixed to the viewport, so it lives here at the page level
               rather than inside any column it would scroll with. */}
           <MobileMenu />
+
+          {/* Desktop-only in practice — a phone has no Cmd/Ctrl+K to press —
+              but not gated on viewport: an external keyboard on a tablet-width
+              window should still reach it, and the dialog itself costs
+              nothing while closed. */}
+          <CommandPalette />
 
           <main id="main" tabIndex={-1} className="deck outline-none">
             <div className="deck-identity">

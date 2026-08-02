@@ -22,6 +22,12 @@ export const fieldState = {
   /** The presentation this visit ended up with. 'static' until the canvas
    *  reports itself live, which is also the truth of the server render. */
   tier: 'static' as FieldTier,
+  /** A counter, not a boolean or a timestamp: the render loop's own frame
+   *  clock (`time`, driven by `dt`) is what paces the morph once it starts,
+   *  so all a trigger has to do is prove a NEW request arrived since the
+   *  loop last checked. Incrementing does that without either side needing
+   *  to agree on a clock. */
+  morphTrigger: 0,
 };
 
 /* The tier gets a store interface as well: the render loop keeps its plain
@@ -44,6 +50,19 @@ export function setFieldTier(tier: FieldTier): void {
   if (fieldState.tier === tier) return;
   fieldState.tier = tier;
   emit();
+}
+
+/**
+ * The Konami-code easter egg's one entry point. A no-op unless the canvas is
+ * actually the thing on screen — with the static poster showing (reduced
+ * motion, weak hardware, WebGL unavailable, or simply before the canvas has
+ * loaded in) there is nothing to morph, and the field's own render loop is
+ * the only reader of `morphTrigger`, so a bump nobody is running to see
+ * would just sit there and fire the instant the canvas eventually did start.
+ */
+export function triggerFieldMorph(): void {
+  if (fieldState.tier === 'static') return;
+  fieldState.morphTrigger += 1;
 }
 
 declare global {

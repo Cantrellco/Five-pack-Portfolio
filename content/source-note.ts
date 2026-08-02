@@ -13,8 +13,9 @@
 export const sourceNote = `Hello, source reader. The scatter behind this page is raw WebGL: one
   program, two buffers, one draw call per frame, no 3D library. Everything
   you can read is real DOM text — the canvas is aria-hidden decoration, and
-  the page works with JavaScript off. Credits: /humans.txt. Security
-  contact: /.well-known/security.txt.`;
+  the page works with JavaScript off. There is a Konami code, and it does
+  something to the field. Credits: /humans.txt. Security contact:
+  /.well-known/security.txt.`;
 
 /** The one line the site says to the console — info-level, and only one. */
 export const consoleNote =

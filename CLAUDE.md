@@ -25,7 +25,12 @@
   the DOM, driven by `lib/field-state.ts`. Never mount per-section scenes.
 - Field geometry is precomputed at build time from `data/training.json` into a
   quantised typed array (`public/field/field-v1.bin`, 6 bytes per point). The
-  field is ambient scatter only — it never resolves into a plotted chart.
+  field is ambient scatter only — it never resolves into a plotted chart. One
+  deliberate exception: the Konami code (`components/field/FieldMorphTrigger.tsx`)
+  briefly blends the scatter onto a closed-form Lissajous curve
+  (`components/field/shaders.ts`), computed from each point's index the same
+  way the ambient scatter is — no baked shape data, no third buffer, no
+  training data involved. Still true to the rule in spirit: it draws no data.
 - No 3D library. `components/field/renderer.ts` talks to WebGL directly: one
   program, two buffers, a loop. three.js + react-three-fiber cost 230KB and
   ~1.4s of script evaluation on mobile, which put Lighthouse at 0.69. Do not
