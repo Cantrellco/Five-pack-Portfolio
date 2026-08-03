@@ -176,6 +176,30 @@ export function MotionProvider() {
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    // The active tab's underline doubles as a read-progress bar: `.tab`'s own
+    // CSS scales it by `--tab-progress` (globals.css), and this is the only
+    // thing that ever writes that variable. Wired only when `pane` is the
+    // scroller — below `lg` the tab row is `hidden` and there is nothing to
+    // drive — and rAF-throttled since `scroll` can fire faster than a frame.
+    let progressRaf = 0;
+    const updateTabProgress = () => {
+      if (!pane) return;
+      const max = pane.scrollHeight - pane.clientHeight;
+      const progress = max <= 0 ? 1 : Math.min(1, Math.max(0, pane.scrollTop / max));
+      document.documentElement.style.setProperty('--tab-progress', String(progress));
+    };
+    const onPaneScroll = () => {
+      if (progressRaf) return;
+      progressRaf = requestAnimationFrame(() => {
+        progressRaf = 0;
+        updateTabProgress();
+      });
+    };
+    if (pane) {
+      updateTabProgress();
+      pane.addEventListener('scroll', onPaneScroll, { passive: true });
+    }
+
     ScrollTrigger.refresh();
 
     // A panel swap replaces the document under the scroll layer: the height
@@ -199,6 +223,7 @@ export function MotionProvider() {
     // scroll.
     const onDeckChange = () => {
       ScrollTrigger.refresh();
+      updateTabProgress();
 
       const arrived = all.filter(
         (el) => el.getClientRects().length > 0 && Number(gsap.getProperty(el, 'opacity')) < 1,
@@ -225,6 +250,8 @@ export function MotionProvider() {
       window.removeEventListener('touchcancel', onTouchEnd);
       window.removeEventListener('deck:change', onDeckChange);
       document.removeEventListener('visibilitychange', onVisibility);
+      if (pane) pane.removeEventListener('scroll', onPaneScroll);
+      if (progressRaf) cancelAnimationFrame(progressRaf);
       if (tick) gsap.ticker.remove(tick);
       lenis?.destroy();
       ScrollTrigger.defaults({ scroller: undefined });

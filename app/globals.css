@@ -58,6 +58,9 @@ body {
   font-synthesis-weight: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  /* The one accent, in the one place a browser default (system blue/black)
+     would otherwise sneak in uninvited: the text-input caret. */
+  caret-color: var(--signal);
 }
 
 /* Selection speaks in two voices. Over ordinary ink, a quiet signal tint —
@@ -1277,13 +1280,37 @@ dd {
   color: var(--ink);
 }
 
+/* The tab row has its own focus language already — the underline below,
+   shared with hover — so the browser's generic rectangular focus ring
+   (`:focus-visible` in the base rules) reads as a foreign box dropped onto
+   a design that otherwise never draws one. Arrowing between tabs is exactly
+   how a keyboard user is expected to move here (`TabBar.tsx`'s roving
+   tabindex), so this is not an edge case to leave unstyled. The colour
+   change plus the full-width underline is still a clear, WCAG-sufficient
+   focus indicator; it is just this component's own instead of the default. */
+.tab:focus-visible {
+  color: var(--ink);
+  outline: none;
+}
+
 .tab[aria-selected='true'] {
   color: var(--ink);
 }
 
-.tab[aria-selected='true']::after,
-.tab:hover::after,
-.tab:focus-visible::after {
+/* The active tab's own underline doubles as a read-progress bar once a
+   reader has actually scrolled the panel: `--tab-progress` (written by
+   MotionProvider's pane scroll listener, 0 at the top and 1 at the bottom)
+   scales it instead of the flat 1 every other tab's hover preview uses.
+   Excluded from the hover/focus rule below on purpose — hovering the tab you
+   are already reading should not snap its bar to full and hide how far
+   through the panel you actually are. */
+.tab[aria-selected='true']::after {
+  transform: scaleX(var(--tab-progress, 1));
+  transform-origin: left;
+}
+
+.tab:not([aria-selected='true']):hover::after,
+.tab:not([aria-selected='true']):focus-visible::after {
   transform: scaleX(1);
   transform-origin: left;
 }
@@ -2405,10 +2432,98 @@ dd {
   }
 }
 
+/* A near-static grain, tiled behind the page — the paper's own tooth, not an
+   effect bolted on top of it. Lives inside `.field-layer` (same stacking
+   context as the poster and the canvas, `z-index: 0`) rather than as its own
+   layer over `.page`, so it textures the field and never sits over type.
+   `multiply` only ever darkens, so it reads as tooth in the paper rather than
+   as a wash — and staying off type keeps the contrast figures measured in
+   tokens.css untouched; nothing here multiplies against ink. One rasterised
+   SVG turbulence tile, repeated — no request, no animation, no JS. */
+.field-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+}
+
 /* Content sits above the field. */
 .page {
   position: relative;
   z-index: 1;
+}
+
+/* The Konami code's one on-page clue — see FieldMorphHint.tsx. Fixed to the
+   viewport rather than any panel, the same reasoning `.field-layer` itself
+   follows: the code works from any tab, so the mark inviting a reader to
+   find it should not disappear when one is switched. `cursor: help` names
+   what hovering it actually does — reveal the title below, nothing else;
+   it is not a button and the code is not triggered by clicking it. Quiet by
+   default and signal on hover only, the same restraint every other
+   interactive mark on the page keeps around the one accent colour. */
+.field-morph-hint {
+  position: fixed;
+  left: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 2;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--graphite);
+  cursor: help;
+  transition: color var(--motion-fast) var(--motion-ease);
+}
+
+.field-morph-hint:hover,
+.field-morph-hint:focus-visible {
+  color: var(--signal);
+}
+
+.field-morph-hint svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* The revealed sequence. Grows upward from the mark rather than sideways —
+   the wordmark sits immediately to its right at the same baseline
+   (Identity.tsx), so a rightward reveal would run straight into "Cody
+   Cantrell" instead of clearing it. A solid `--paper` plate with a hairline
+   border, the same flat single-plane surface every other raised element on
+   this site uses, since it floats over the portrait engraving and needs to
+   stay legible against whatever is behind it at that point. Present in the
+   DOM at all times, only ever hidden by opacity — a screen reader reaches
+   it in normal reading order with no hover required. */
+.field-morph-hint-code {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + var(--sp-2xs));
+  white-space: nowrap;
+  padding: var(--sp-3xs) var(--sp-xs);
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(0.25rem);
+  pointer-events: none;
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+.field-morph-hint:hover .field-morph-hint-code,
+.field-morph-hint:focus-visible .field-morph-hint-code {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-morph-hint-code {
+    transition: none;
+  }
 }
 
 /* --------------------------------------------------------------- skip link

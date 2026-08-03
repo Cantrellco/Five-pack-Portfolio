@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { resolveLogo } from '@/lib/media';
+import { ScrambleText } from '@/components/ScrambleText';
 
 /**
  * Kicker, then headline, then byline — one column, read top to bottom, the
@@ -35,7 +36,7 @@ export function SectionHeader({
   return (
     <div>
       <p className="label kicker" data-reveal>
-        {label}
+        <ScrambleText text={label} />
       </p>
 
       <h2 id={id} className="display-1" data-reveal>

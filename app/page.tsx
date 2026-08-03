@@ -10,6 +10,7 @@ import { MobileMenu } from '@/components/MobileMenu';
 import { Resume } from '@/components/Resume';
 import { DeckProvider } from '@/components/deck/DeckContext';
 import { Panel } from '@/components/deck/Panel';
+import { FieldMorphHint } from '@/components/field/FieldMorphHint';
 import { FieldMorphTrigger } from '@/components/field/FieldMorphTrigger';
 import { FieldMount } from '@/components/field/FieldMount';
 import { MotionProvider } from '@/components/motion/MotionProvider';
@@ -43,6 +44,7 @@ export default async function Page() {
     <>
       <FieldMount />
       <FieldMorphTrigger />
+      <FieldMorphHint />
       <DeckProvider>
         <div className="page">
           <Masthead />

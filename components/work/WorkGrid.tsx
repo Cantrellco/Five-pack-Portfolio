@@ -1,5 +1,6 @@
 'use client';
 
+import { ScrambleText } from '@/components/ScrambleText';
 import { WORK_TABS } from '@/content/nav';
 import { useWorkDeck } from './WorkDeckContext';
 
@@ -35,7 +36,9 @@ export function WorkGrid() {
 
   return (
     <>
-      <p className="label kicker">Projects</p>
+      <p className="label kicker">
+        <ScrambleText text="Projects" />
+      </p>
 
       {/* Every other panel opens kicker-then-headline before any content —
           About with the role line, Resume and Contact through `SectionHeader`.

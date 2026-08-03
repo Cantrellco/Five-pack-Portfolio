@@ -1,4 +1,5 @@
 import type { CSSProperties, SVGProps } from 'react';
+import { ScrambleText } from '@/components/ScrambleText';
 import { skills, type Skill } from '@/content/skills';
 
 /**
@@ -185,7 +186,9 @@ function SkillOrb({ skill, index }: { skill: Skill; index: number }) {
 export function Skills() {
   return (
     <div className="skills mt-[var(--sp-md)] border-t border-rule pt-[var(--sp-sm)]">
-      <p className="label kicker">Skills</p>
+      <p className="label kicker">
+        <ScrambleText text="Skills" />
+      </p>
 
       <div className="skills-track-viewport">
         <div className="skills-track">

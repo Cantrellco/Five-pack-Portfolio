@@ -20,3 +20,16 @@ export const sourceNote = `Hello, source reader. The scatter behind this page is
 /** The one line the site says to the console — info-level, and only one. */
 export const consoleNote =
   'One WebGL program, one draw call per frame. The rest is HTML — view source, or /humans.txt.';
+
+/**
+ * The one visible clue that the Konami code exists — everywhere else it is
+ * mentioned (`sourceNote` above, `/humans.txt`) a reader has to already be
+ * looking at source or credits to find it. Spells out the actual sequence
+ * rather than just naming it: a reader who has never heard "Konami code"
+ * still walks away knowing what to press. Real text in `FieldMorphHint`,
+ * not a `title` attribute — native tooltips are slow, inconsistent across
+ * browsers, and invisible to a screen reader unless a user knows to ask for
+ * them, so a reader hovering the mark deserves better than a bare cursor
+ * change and a maybe.
+ */
+export const konamiHint = 'Try: ↑ ↑ ↓ ↓ ← → ← → B A';
