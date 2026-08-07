@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { printLabel } from '@/content/resume';
 
-/* Same "is this the client, post-hydration" signal CopyEmail uses, and for
+/* Same "is this the client, post-hydration" signal CopyValue uses, and for
    the same reasons: flipping a mounted flag from an effect is a cascading
    render the lint rules reject, and this control must not exist at all in
    the server document — a print button with no scripting is a dead button,

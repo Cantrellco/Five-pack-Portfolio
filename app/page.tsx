@@ -19,10 +19,6 @@ import { WorkDeckProvider } from '@/components/work/WorkDeckContext';
 import { WorkGrid } from '@/components/work/WorkGrid';
 import { WorkProject } from '@/components/work/WorkPanel';
 import { sites } from '@/content/projects';
-import { getGithubSummary } from '@/lib/github';
-
-/** Static page, refreshed daily so the GitHub figures stay current. */
-export const revalidate = 86400;
 
 /**
  * Two columns: who this is, and what they have done.
@@ -38,8 +34,6 @@ export const revalidate = 86400;
  * turning JavaScript off costs nothing here.
  */
 export default async function Page() {
-  const github = await getGithubSummary();
-
   return (
     <>
       <FieldMount />
@@ -101,7 +95,7 @@ export default async function Page() {
                 </Panel>
 
               <Panel id="contact">
-                <Contact github={github} />
+                <Contact />
               </Panel>
             </div>
           </main>

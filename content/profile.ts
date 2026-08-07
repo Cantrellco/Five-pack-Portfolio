@@ -70,6 +70,11 @@ export const profile = {
   country: 'US',
 
   email: 'cantrellco.13@gmail.com',
+
+  /** Displayed as-is next to the email; the tel: link strips it to digits
+   *  and adds the +1 country code. */
+  phone: '(618) 599-3901',
+
   github: 'https://github.com/Cantrellco',
   githubUser: 'Cantrellco',
 
