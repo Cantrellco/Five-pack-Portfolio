@@ -246,8 +246,8 @@ export type ClientSite = {
   screenshot: { src: string; alt: string };
   /**
    * The same page's mobile view, shown in a phone frame next to the desktop
-   * one. Optional — a site with no live URL yet (see Fusion Coffee) has
-   * nothing to screenshot, so it simply doesn't render one.
+   * one. Optional — a site with no live URL yet has nothing to screenshot,
+   * so it simply doesn't render one.
    */
   screenshotMobile?: { src: string; alt: string; label: string };
 };
@@ -277,11 +277,11 @@ export const sites = [
     name: 'Fusion Coffee',
     kind: 'Client · Web',
     summary: 'Coffee shop site for a coffee shop in downtown Fairfield, Illinois.',
-    url: 'https://cantrellco.github.io/Fusion-Coffee/',
+    url: 'https://www.fusioncoffeeshop.com/',
     repoUrl: 'https://github.com/Cantrellco/Fusion-Coffee',
     lines: [
       'Built from the shop’s own moodboard — warm, editorial and photography-forward — with their neon logo kept as the brand mark.',
-      'Next.js App Router exported as a fully static site, and installable as a PWA from the web manifest and icon set.',
+      'Next.js App Router site, live at its own domain and installable as a PWA — full icon set, app shortcuts, and an iPhone home screen icon via apple-touch-icon.',
       'Shop content — address, hours, menu, socials — lives in a single site file, so it changes in one place.',
       'Ordering hands off to the Square flow the shop already runs.',
     ],

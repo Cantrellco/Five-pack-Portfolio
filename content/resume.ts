@@ -38,7 +38,7 @@ export const roles: readonly ResumeRole[] = [
     bullets: [
       'Lead developer for the company’s web presence, designing and building sites for two of its properties.',
       'Little Town: seven hand-built pages — HTML, CSS and a little JavaScript, no framework — for a children’s play space, ordered to answer a parent’s questions the way a parent actually asks them.',
-      'Fusion Coffee: a Next.js site built from the shop’s own moodboard, exported static and installable as a PWA, with ordering handed off to their existing Square flow.',
+      'Fusion Coffee: a Next.js site built from the shop’s own moodboard, live at its own domain and installable as a PWA, with ordering handed off to their existing Square flow.',
     ],
   },
   {
