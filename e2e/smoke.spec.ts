@@ -1,29 +1,10 @@
-import { test, expect, type ConsoleMessage, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+/* Anything the browser complains about is a failure, not a warning. Shared
+   with e2e/pay.spec.ts so both hold the same line on what counts as noise. */
+import { watchConsole } from './console';
 
 /** Six projects, always all six in the row. */
 const WORK_TAB_COUNT = 6;
-
-/**
- * Messages emitted by the headless GL stack rather than by the page. Software
- * rasterisation plus Playwright's screenshot path produces these; they do not
- * occur on real hardware and nothing in the site can prevent them.
- */
-const ENVIRONMENT_NOISE = /GL Driver Message|\[\.WebGL-0x|Automatic fallback to software WebGL/i;
-
-/** Anything else the browser complains about is a failure, not a warning. */
-function watchConsole(page: Page) {
-  const problems: string[] = [];
-  page.on('console', (m: ConsoleMessage) => {
-    if (m.type() !== 'error' && m.type() !== 'warning') return;
-    if (ENVIRONMENT_NOISE.test(m.text())) return;
-    problems.push(`${m.type()}: ${m.text()}`);
-  });
-  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
-  page.on('response', (r) => {
-    if (r.status() >= 400) problems.push(`HTTP ${r.status()} ${r.url()}`);
-  });
-  return problems;
-}
 
 test('loads, names the person, and says nothing to the console', async ({ page }) => {
   const problems = watchConsole(page);

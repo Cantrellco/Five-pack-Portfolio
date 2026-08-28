@@ -42,6 +42,20 @@
   maps them into Tailwind via `@theme inline`. Never hardcode a hex in a
   component.
 - All copy lives in `content/`. Components import it, never inline it.
+- Payments (`/pay`) are Stripe **Checkout**, not Elements: a plain form POST
+  to `app/api/checkout/route.server.ts`, which creates a session over the REST
+  API and 303s to Stripe. No `stripe` package and no Stripe.js — the site
+  needs two POSTs, a GET and an HMAC (`lib/stripe.ts`), and a third-party
+  script plus an iframe would put the mobile Perf budget at risk for a page
+  whose content is two text inputs. Do not reintroduce either to add a
+  feature.
+- Every payment route is a `.server.tsx` / `.server.ts` file.
+  `next.config.ts` puts that extension in `pageExtensions` ONLY for the
+  server-rendered build, which is what keeps these routes out of the GitHub
+  Pages export — that build has no server, and Next fails an export on a
+  dynamic route rather than skipping it. A new payment route must follow the
+  same naming, and anything on the home page that links to one must be gated
+  on `NEXT_PUBLIC_BASE_PATH` the way `components/Contact.tsx` is.
 
 ## Aesthetic rules
 - Direction: light editorial — warm, typographic, spacious. Ink on paper.
@@ -66,9 +80,22 @@
 ## Non-negotiable
 - Site is fully functional with JS off, WebGL off, reduced motion on, and on a
   two-core device. All four are covered by `e2e/smoke.spec.ts` — keep them green.
+  The payment flow holds the same line: form POST and a 303, no client JS in the
+  path, asserted by `e2e/pay.spec.ts`.
 - Canvas is `aria-hidden`. All content is real DOM text.
 - No scroll-jacking. Lenis smooths the wheel; touch stays native.
 - Zero console errors AND zero console warnings. The e2e suite asserts this.
+- Money is parsed as integers, never floating point (`lib/money.ts`).
+  `parseFloat(x) * 100` is wrong on values like 11.90. The accepted range
+  lives in `content/pay.ts` beside the copy that states it, and the server
+  re-validates everything the form sends — the input’s `pattern` and `min`
+  are a courtesy to whoever is typing, never a control.
+- The Stripe webhook verifies the signature over the RAW request body before
+  reading anything out of it, and answers 2xx to events it does not handle.
+  That endpoint is public: the signature check is the whole security boundary.
+- Stripe secrets come from Workers secrets / `.dev.vars` and are never
+  committed. With none set the payment page still builds and says payments are
+  off, which is what keeps CI and a fresh clone green.
 - Never state a fact about the training data that the data does not support —
   `data/training.json`'s `placeholder` flag (surfaced as `fieldStats.placeholder`
   in `lib/generated/field-stats.ts`) marks synthetic data for exactly this

@@ -1,0 +1,25 @@
+# Copy to `.dev.vars` and fill in. That file is gitignored; this one is not,
+# so never put a real key here.
+#
+# `.dev.vars` is read by wrangler (`npm run preview`) and by `next dev` through
+# `initOpenNextCloudflareForDev()` in next.config.ts. In production the same two
+# names are set as Workers secrets instead:
+#
+#   npx wrangler secret put STRIPE_SECRET_KEY
+#   npx wrangler secret put STRIPE_WEBHOOK_SECRET
+#
+# Both are optional. With neither set, /pay still builds and renders — it says
+# payments are not switched on, and the webhook refuses every event rather than
+# trusting one it cannot verify.
+
+# Test keys start sk_test_, live keys sk_live_. Use a test key until the whole
+# flow has been through Stripe's test cards at least once.
+STRIPE_SECRET_KEY=sk_test_replace_me
+
+# The signing secret for ONE webhook endpoint.
+#
+# The dashboard gives you one per endpoint. `stripe listen --forward-to
+# localhost:3000/api/stripe/webhook` prints a DIFFERENT one for the forwarded
+# session — when testing locally use that, not the dashboard's, or every event
+# will fail the signature check.
+STRIPE_WEBHOOK_SECRET=whsec_replace_me

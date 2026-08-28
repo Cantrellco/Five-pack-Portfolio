@@ -3081,6 +3081,200 @@ dd {
   will-change: opacity, transform;
 }
 
+/* ------------------------------------------------------------------ payment
+   The two forms on /pay, and the confirmation notices above them.
+
+   The site's first and only form, which is why every rule here is new rather
+   than borrowed. It still borrows what already existed: the submit control is
+   `.cta-ghost`, the same bordered button the resume PDF link and the print
+   button use, because a payment page is not the place to introduce a second
+   idea of what a button looks like.
+
+   No new colour. An error state is the obvious excuse to reach for a red, and
+   the palette is six values with no room for a seventh (see tokens.css) — so
+   the error notice separates itself from the neutral one by weight and by ink
+   instead, which is the same move the rest of the site makes to signal
+   emphasis without shouting.
+
+   Nothing here needs a reduced-motion branch of its own: the global rule
+   further down zeroes every transition duration with `*`, and the only
+   animation on this page is a border colour.
+-------------------------------------------------------------------------- */
+
+/* The deck locks `.page` to one viewport at `lg` and hides its overflow —
+   that is what makes the two-pane layout work, with the right pane owning
+   the only scrollbar. A standalone document inside `.page` inherits that
+   lock and gets silently guillotined at 100svh: on /pay that clipped the
+   foot note and the way back, with no scrollbar to reach them, because
+   nothing on this route creates the inner scroller the deck relies on.
+
+   So the routes that are ordinary documents opt out explicitly. A modifier
+   rather than a second wrapper class: they still need everything else
+   `.page` does — chiefly stacking above the field layer — and only differ
+   in being as tall as their content. */
+@media (min-width: 64rem) {
+  .page-flow {
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
+}
+
+.pay-forms {
+  /* One column until there is genuinely room for two. The cap is well below
+     `--max-page`: these are short forms, and stretched across an 88rem shell
+     the label and its input end up a screen apart. */
+  display: grid;
+  gap: var(--sp-xl);
+  max-width: 62rem;
+  margin-top: var(--sp-xl);
+}
+
+@media (min-width: 60rem) {
+  .pay-forms {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2xl);
+  }
+}
+
+/* A hairline over each block, so the two forms read as two separate offers
+   rather than one long column of fields. */
+.pay-block {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--sp-md);
+}
+
+.pay-blurb {
+  margin-top: var(--sp-2xs);
+  max-width: var(--measure);
+  font-size: var(--fs-sm);
+  color: var(--graphite);
+}
+
+.pay-row {
+  margin-top: var(--sp-md);
+}
+
+.pay-label {
+  display: block;
+  margin-bottom: var(--sp-3xs);
+}
+
+/* The currency, inside the label. Set in the data voice because that is what
+   it is — the label says what to type, this says in what. Kept out of the
+   placeholder and out of a decorative prefix on purpose: it belongs in the
+   accessible name, and only a label puts it there. */
+.pay-currency {
+  font-family: var(--ff-mono);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* One input treatment, used by both fields. The amount field adds a `$` in
+   front of it via `.money-input` below rather than by being a second,
+   near-identical style. */
+.pay-input {
+  display: block;
+  width: 100%;
+  max-width: 24rem;
+  /* 2.75rem is the same touch target `.mobile-menu-button` and the copy
+     control hold themselves to. A money field on a phone is the last place
+     to be stingy about it. */
+  min-height: 2.75rem;
+  padding: var(--sp-2xs) var(--sp-xs);
+  font-family: var(--ff-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-tight);
+  color: var(--ink);
+  /* Recessed rather than outlined-on-paper: the fill is what says "type
+     here" before the border does. */
+  background-color: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.pay-input:hover {
+  border-color: color-mix(in srgb, var(--rule) 40%, var(--ink) 60%);
+}
+
+/* The focus ring itself is the global `:focus-visible` rule — 2px of signal,
+   offset — and is deliberately not overridden here. This only darkens the
+   border underneath it so the field still reads as active in the moment
+   between click and ring. */
+.pay-input:focus {
+  border-color: var(--ink);
+}
+
+/* An invalid amount comes back from the server as a full-width notice above
+   the forms; this is the quieter half of that, marking WHICH field it meant.
+   Border only — no icon, no colour — for the same reason the notice carries
+   no red. */
+.pay-input[aria-invalid='true'] {
+  border-color: var(--ink);
+  border-left-width: 2px;
+}
+
+/* The amount field's currency mark. Absolutely positioned rather than a flex
+   sibling inside a bordered wrapper, so the input keeps its own border and
+   its own focus outline and there is only ever one input style to maintain. */
+.money-input {
+  position: relative;
+  max-width: 14rem;
+}
+
+.money-prefix {
+  position: absolute;
+  left: var(--sp-xs);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--graphite);
+  font-size: var(--fs-base);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.money-input .pay-input {
+  max-width: none;
+  /* Clears the mark above. Tabular figures because this is a number being
+     read back as much as typed. */
+  padding-left: calc(var(--sp-xs) + 0.85em);
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-hint {
+  margin-top: var(--sp-3xs);
+  max-width: var(--measure);
+  font-size: var(--fs-xs);
+  color: var(--graphite);
+}
+
+/* The banner above the forms — a rejected amount, a Stripe failure, or the
+   neutral note that says a payment was cancelled. */
+.pay-notice {
+  margin-top: var(--sp-md);
+  max-width: var(--measure);
+  padding: var(--sp-xs) var(--sp-sm);
+  background-color: var(--paper-2);
+  border-left: 2px solid var(--rule);
+  font-size: var(--fs-sm);
+  color: var(--graphite);
+}
+
+/* Something the reader has to act on. Full-strength ink against the neutral
+   notice's graphite, and a rule that matches — the emphasis is weight, not
+   hue, because the palette has no red and is not getting one. */
+.pay-notice-error {
+  border-left-color: var(--ink);
+  color: var(--ink);
+}
+
+.pay-foot {
+  margin-top: var(--sp-xl);
+  max-width: var(--measure);
+  color: var(--graphite);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .js [data-reveal] {
     opacity: 1;

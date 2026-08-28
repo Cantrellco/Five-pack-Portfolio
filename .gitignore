@@ -19,7 +19,13 @@ cloudflare-env.d.ts
 next-env.d.ts
 
 .env*.local
-.dev.vars
+.dev.vars*
+# Live Stripe credentials, read ONLY by scripts/invoice.mjs --live.
+# Deliberately NOT .dev.vars: that file is loaded by the dev server, and a
+# live key there would make a localhost test payment charge a real card.
+.stripe-live*
+# Scratch handoff written by scripts/invoice.mjs - holds a payment link.
+.invoice-last.json
 .DS_Store
 .vercel
 

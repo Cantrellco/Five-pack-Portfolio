@@ -143,6 +143,132 @@ that does not animate.
 
 ---
 
+## Payments
+
+`/pay` takes a one-off invoice payment or sets up a monthly retainer. It is a
+separate route, not a panel in the deck — the deck is the portfolio, and this
+is a tool for someone who has already decided. The front page's bundle is
+untouched by it.
+
+**No card fields, no Stripe.js, no `stripe` package.** The page posts an
+ordinary form, the server creates a Checkout Session over the REST API, and the
+browser is 303'd to Stripe. Card details never touch this site, and the whole
+flow works with JavaScript off — which `e2e/pay.spec.ts` asserts, because a
+payment page is where that principle stops being a principle and becomes
+someone unable to pay an invoice.
+
+| Route | |
+|---|---|
+| `/pay` | The two forms. `noindex`. |
+| `/pay/done` | Confirmation. Re-fetches the session from Stripe — it never believes the URL. |
+| `/api/checkout` | Creates the Checkout Session, 303s to Stripe. |
+| `/api/portal` | Opens Stripe's billing portal so a retainer can be cancelled without asking. |
+| `/api/stripe/webhook` | Verified events. This is the only way renewals and failed cards are ever heard about. |
+
+All five are `.server.tsx` / `.server.ts` files. `next.config.ts` puts that
+extension in `pageExtensions` **only** for the server-rendered build, so none of
+them exist in the GitHub Pages export (`npm run build:pages`) — that build has
+no server, and Next fails an export outright rather than skipping a dynamic
+route. The Contact panel's link to `/pay` is hidden in that build for the same
+reason.
+
+### Setting it up
+
+Two secrets. Neither is ever committed; `.dev.vars` and `.env*` are gitignored.
+
+```
+npx wrangler secret put STRIPE_SECRET_KEY      # sk_live_... or sk_test_...
+npx wrangler secret put STRIPE_WEBHOOK_SECRET  # whsec_...
+```
+
+For local work, put the same two in `.dev.vars` (see `.dev.vars.example`).
+
+Then, in the Stripe dashboard:
+
+1. **Webhook endpoint** → `https://codycantrell.dev/api/stripe/webhook`.
+   Subscribe at least to `checkout.session.completed`, `invoice.paid`,
+   `invoice.payment_failed` and `customer.subscription.deleted`. Copy the
+   signing secret it gives you into `STRIPE_WEBHOOK_SECRET`.
+2. **Customer portal** → configure it (Settings → Billing → Customer portal),
+   or `/api/portal` will fail with a plain API error. Turning on its email login
+   link is also what gives a returning client a way back into their own billing
+   weeks later; this site deliberately has no "look me up by email" endpoint,
+   because that would let anyone open the portal for any address they can guess.
+
+With no key configured the page still builds, still renders, and says payments
+are not switched on — so a fresh clone with no Stripe account passes CI.
+
+### Sending an invoice
+
+`/pay` is the self-serve door: someone who already knows the amount pays it
+now. Money a client *owes* is a different job, and `scripts/invoice.mjs` does
+that one — it drives Stripe Invoicing, so you get a real invoice number, a PDF,
+a due date, and Stripe's reminder and retry machinery. Neither replaces the
+other and the script does not touch the site.
+
+```
+node scripts/invoice.mjs --to client@acme.com --name "Acme" \
+  --amount 2500 --for "Landing page design and build" --due 14
+```
+
+That creates and finalizes the invoice and prints its hosted payment link and
+PDF. **Nothing is emailed.** The intended flow is to paste that link into a
+draft email and send it yourself, so the client hears from you rather than from
+Stripe. Add `--send` if you would rather Stripe email it directly.
+
+Amounts go in as dollars and are parsed to cents by the same integer rule as
+the payment route — `2500`, `2500.00`, `$2,500` all work; anything ambiguous is
+rejected rather than rounded.
+
+### Test keys and live keys live in different files
+
+| file | holds | read by |
+|---|---|---|
+| `.dev.vars` | the **test** key | the dev server, and `invoice.mjs` by default |
+| `.stripe-live` | the **live** key | `invoice.mjs --live`, and nothing else |
+
+This split is deliberate and worth keeping. `.dev.vars` is loaded by the dev
+server, so a live key in it would mean a test payment on localhost silently
+charging a real card. Billing a real client should be something you opt into by
+name — `--live` — not something you can drift into by having the wrong file
+open. Both files are gitignored.
+
+Two more guards, because an invoice is only half-reversible — voiding one does
+not unsend the email a client has already read:
+
+- nothing is emailed without `--send`;
+- on a live key, `--send` also requires `--yes`, and the refusal prints the
+  recipient and amount first.
+
+### Testing it
+
+`npm run test:e2e` covers the whole validation layer with **no key required**:
+every amount that must be rejected is rejected before Stripe is contacted. Run
+the rest against a `sk_test_...` key with Stripe's test cards — `4242 4242 4242
+4242` succeeds, `4000 0000 0000 9995` is declined.
+
+To exercise the webhook locally, `stripe listen --forward-to
+localhost:3000/api/stripe/webhook` prints its own `whsec_` — use that one in
+`.dev.vars`, not the dashboard's.
+
+### Two things worth knowing before changing this
+
+- **The amount is parsed as integers, never as a float** (`lib/money.ts`).
+  `parseFloat('11.90') * 100` is `1189.9999999999998`. Whatever replaces that
+  parser has to keep every case in `e2e/pay.spec.ts` deciding the same way.
+- **No API version is pinned.** Requests use the account's default version, and
+  the response fields this site reads (`status`, `payment_status`, `mode`,
+  `amount_total`, `currency`, `customer`, `subscription`) have been stable
+  across many versions. If you'd rather pin one, add a `Stripe-Version` header
+  in `lib/stripe.ts` — one line, in `request()`.
+
+The floor and ceiling on what will be accepted ($5 and $50,000) live in
+`content/pay.ts` next to the copy that states them, so the page can never
+promise a range the server does not enforce. The ceiling is a typo guard, not a
+business limit.
+
+---
+
 ## Before this goes live
 
 Open `content/profile.ts` and fill the `TODO(owner)` fields — LinkedIn, résumé

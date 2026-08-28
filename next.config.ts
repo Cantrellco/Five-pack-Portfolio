@@ -12,6 +12,11 @@ initOpenNextCloudflareForDev();
 const GH_PAGES_BASE = process.env.GITHUB_PAGES === 'true' ? '/Five-pack-Portfolio' : '';
 
 const nextConfig: NextConfig = {
+  pageExtensions:
+    GH_PAGES_BASE === ''
+      ? ['server.tsx', 'server.ts', 'tsx', 'ts', 'jsx', 'js']
+      : ['tsx', 'ts', 'jsx', 'js'],
+
   reactStrictMode: true,
 
   experimental: {

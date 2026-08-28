@@ -1,6 +1,13 @@
 import { CopyValue } from '@/components/CopyValue';
 import { CornerPlate } from '@/components/CornerPlate';
+import { payCopy } from '@/content/pay';
 import { profile } from '@/content/profile';
+
+/** True on the server-rendered build (Cloudflare Workers), false on the
+ *  GitHub Pages static export, which sets a base path and has no server to
+ *  run the payment route. Read at module scope because Next inlines this at
+ *  build time — it is a constant per build, not a runtime branch. */
+const PAY_LINK_VISIBLE = (process.env.NEXT_PUBLIC_BASE_PATH ?? '') === '';
 
 export function Contact() {
   // Unfilled fields in profile.ts are blank strings; the link is simply absent
@@ -66,6 +73,27 @@ export function Contact() {
         <p className="mt-[var(--sp-sm)] text-sm text-graphite" data-reveal>
           {profile.contactNote}
         </p>
+
+        {/* The way to /pay. A plain anchor rather than next/link: that route
+            is for the small number of readers who arrived already knowing
+            they owed something, and prefetching it for everyone else would
+            be paying to warm a page almost nobody opens. It sits below the contact note rather than in the
+            profile-links row above, which is desktop-only; a client paying an
+            invoice from their phone is the likelier case, not the rarer one.
+
+            Absent from the GitHub Pages export. /pay is a dynamic route that
+            posts to route handlers, so `npm run build:pages` deliberately
+            excludes it (see `pageExtensions` in next.config.ts) — and a link
+            to a page that build does not contain is just a 404 with good
+            intentions. A non-empty base path is exactly the signal that this
+            is that build. */}
+        {PAY_LINK_VISIBLE ? (
+          <p className="mt-[var(--sp-md)] text-sm" data-reveal>
+            <a className="link-block" href="/pay">
+              {payCopy.contactLinkLabel}
+            </a>
+          </p>
+        ) : null}
 
         {/* Desktop only: on the phone screen the corner stack below carries
             the same destinations as marks. */}
